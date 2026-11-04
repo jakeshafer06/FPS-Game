@@ -50,6 +50,7 @@
     <div id="overdrive-tint"></div>
 
     <div id="lock-hint" class="hidden">CLICK TO CAPTURE MOUSE</div>
+    <div id="cheat-badge" class="hidden">CHEATS ACTIVE</div>
     <div id="crosshair">
       <span class="ch-dot"></span><span class="ch-line ch-up"></span><span class="ch-line ch-down"></span>
       <span class="ch-line ch-left"></span><span class="ch-line ch-right"></span>
@@ -176,6 +177,26 @@
   </div>
 
   <!-- Touch controls -->
+  <div id="cheat-panel" class="hidden" role="dialog" aria-label="Developer console">
+    <div class="cheat-inner">
+      <div class="cheat-head">
+        <div>
+          <div class="hud-label cheat-kicker">// ROOT ACCESS GRANTED</div>
+          <h2 class="cheat-title">DEV CONSOLE</h2>
+        </div>
+        <button id="cheat-close" class="btn btn-small btn-ghost" aria-label="Close">CLOSE</button>
+      </div>
+      <div id="cheat-list"></div>
+      <div class="cheat-actions">
+        <button id="cheat-all" class="btn btn-small btn-ghost">ALL ON</button>
+        <button id="cheat-none" class="btn btn-small btn-ghost">ALL OFF</button>
+        <button id="cheat-coins" class="btn btn-small btn-ghost">+5,000 &#9670;</button>
+        <button id="cheat-unlock" class="btn btn-small btn-ghost">UNLOCK ALL SKINS</button>
+      </div>
+      <p class="cheat-foot">Type <b>IMBOT</b> again or press <b>ESC</b> to close.</p>
+    </div>
+  </div>
+
   <div id="touch-controls" class="hidden">
     <div id="touch-stick" class="t-zone"><div id="stick-base"><div id="stick-nub"></div></div></div>
     <div id="touch-look" class="t-zone"></div>

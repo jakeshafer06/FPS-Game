@@ -62,3 +62,8 @@ Original prompt: help me make a fps game
 - Economy: coins per kill (x mode multiplier), profile in `js/storage.js` (guarded localStorage, in-memory fallback + `.save-note`). Armory (`#armory-screen`) buys/equips 6 pulse-rifle skins (`js/skins.js`); `player.applySkin` recolors weapon + tracers; Prism hue-cycles.
 - Rendering fix: platform "trim" used to be a solid emissive box covering each platform top; together with full-width emissive lines it made UnrealBloom wash out the frame near the dais. Trims are now 4 thin edge bars below the top surface, emissive intensities ~1.0–1.1, bloom (0.38, 0.3, 0.9).
 - Test harness: `window.advanceTime(ms)` steps 60 Hz ticks then renders; `player._applyCamera` calls `camera.updateMatrixWorld()` so raycasts are correct inside stepped ticks. Headless test scripts: `output/functest.js`, `output/flowtest.js` (all passing).
+
+## Secret dev console (cheats)
+- `js/cheats.js`: type `IMBOT` anywhere (letters unused by gameplay keys) or tap the menu title 5x within 2 s. Opening mid-game pauses; closing resumes. Esc closes.
+- Toggles: aimbot (while firing, snaps to best visible enemy in a ~75° cone with LOS raycast against world.raycastTargets, zero spread), wallhack (enemy materials depthTest=false, renderOrder 999), god, one-shot (gun + shockwave), infinite ammo, no cooldowns, speed 1.8x, slow-mo (enemy dt x0.4). Buttons: all on/off, +5000 coins, unlock all skins. HUD badge "CHEATS ACTIVE".
+- Tests: `output/cheattest.js` (27 checks, all passing).

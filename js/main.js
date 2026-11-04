@@ -14,6 +14,7 @@ import { ABILITIES } from './player.js';
 import { MODES } from './modes.js';
 import { storage } from './storage.js';
 import { SKINS, getSkin } from './skins.js';
+import { cheats, initCheats, applyWallhack } from './cheats.js';
 
 /* ---------- renderer / scene / camera ---------- */
 const canvas = document.getElementById('game');
@@ -398,6 +399,33 @@ function togglePause() {
 }
 
 ui.el.startBtn.addEventListener('click', startGame);
+
+/* ---------- secret cheat console (type IMBOT, or tap the menu title 5x) ---------- */
+let pausedForCheats = false;
+const cheatUI = initCheats({
+  onOpen() {
+    audio.init();
+    audio.abilityReady && audio.abilityReady();
+    if (game.phase === 'playing') { togglePause(); pausedForCheats = true; }
+  },
+  onClose() {
+    if (pausedForCheats && game.phase === 'paused') togglePause();
+    pausedForCheats = false;
+  },
+  onCoins(n) {
+    profile.coins += n;
+    ui.setWallet(profile.coins);
+    saveProfile();
+    audio.buy && audio.buy();
+    if (game.phase === 'armory') renderArmory();
+  },
+  onUnlockAll() {
+    for (const s of SKINS) if (!profile.owned.includes(s.id)) profile.owned.push(s.id);
+    saveProfile();
+    audio.buy && audio.buy();
+    if (game.phase === 'armory') renderArmory();
+  },
+});
 // Engine is ready: arm the DEPLOY button (it starts disabled while scripts load).
 ui.el.startBtn.disabled = false;
 ui.el.startBtn.dataset.ready = '1';
@@ -467,7 +495,8 @@ const clock = new THREE.Clock();
 function tick(dt) {
   world.update(dt, clock.elapsedTime);
   player.update(dt);
-  enemies.update(dt, clock.elapsedTime);
+  enemies.update(cheats.slowmo ? dt * 0.4 : dt, clock.elapsedTime);
+  applyWallhack(enemies.enemies);
   effects.update(dt);
 }
 
@@ -478,7 +507,7 @@ function render() {
 
 let rafId = null;
 /* debug handles (also used by automated tests) */
-window.__game = { lock, profile, MODES, SKINS, ABILITIES, renderer, scene, camera, composer, world, effects, player, enemies, game, ui, audio, bloomPass };
+window.__game = { cheats, cheatUI, lock, profile, MODES, SKINS, ABILITIES, renderer, scene, camera, composer, world, effects, player, enemies, game, ui, audio, bloomPass };
 window.__THREE = THREE;
 
 function animate() {

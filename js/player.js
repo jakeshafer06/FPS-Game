@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { getSkin } from './skins.js';
+import { cheats, findAimTarget, aimAt } from './cheats.js';
 
 const EYE_HEIGHT = 1.65;
 const PLAYER_RADIUS = 0.45;
@@ -172,7 +173,7 @@ export class Player {
         if (d > 9) continue;
         const dir = new THREE.Vector3(e.pos.x - this.pos.x, 0, e.pos.z - this.pos.z).normalize();
         e.knock.addScaledVector(dir, 14);
-        e.hit(45 * (e.isBoss ? 0.6 : 1), e.pos.clone(), dir, 'shock');
+        e.hit(cheats.oneShot ? 99999 : 45 * (e.isBoss ? 0.6 : 1), e.pos.clone(), dir, 'shock');
         hitCount++;
       }
       if (hitCount) this.ui.hitmarker(false);
@@ -205,7 +206,7 @@ export class Player {
   /* ---- damage ---- */
   damage(amount) {
     if (!this.alive || this.game.phase !== 'playing') return;
-    if (this.invuln > 0) return;
+    if (this.invuln > 0 || cheats.god) return;
     this.health -= amount;
     this.ui.setHealth(Math.max(0, this.health));
     this.ui.damageFlash();
@@ -231,7 +232,14 @@ export class Player {
 
     this.fireT -= dt;
     this.invuln = Math.max(0, this.invuln - dt);
-    for (const k in this.cd) this.cd[k] = Math.max(0, this.cd[k] - dt);
+    for (const k in this.cd) this.cd[k] = cheats.noCooldown ? 0 : Math.max(0, this.cd[k] - dt);
+
+    // aimbot: while the trigger is held, lock onto the best visible clanker
+    this.aimTarget = null;
+    if (cheats.aimbot && this.fireHeld && this.game.enemies) {
+      const t = findAimTarget(this, this.game.enemies.enemies, this.world);
+      if (t) { aimAt(this, t, dt); this.aimTarget = t; this._applyCamera(); }
+    }
     if (this.overdriveT > 0) {
       this.overdriveT -= dt;
       if (this.overdriveT <= 0) {
@@ -278,7 +286,7 @@ export class Player {
     const wish = this._wishDir();
     const sprinting = this.keys['ShiftLeft'] || this.keys['ShiftRight'];
     if (wish.lengthSq() > 0) wish.normalize();
-    const speed = sprinting ? SPRINT_SPEED : WALK_SPEED;
+    const speed = (sprinting ? SPRINT_SPEED : WALK_SPEED) * (cheats.speed ? 1.8 : 1);
 
     if (this.dashT > 0) {
       this.dashT -= dt;
@@ -354,7 +362,7 @@ export class Player {
 
   shoot() {
     const od = this.overdriveT > 0;
-    if (!od) {
+    if (!od && !cheats.infAmmo) {
       this.ammo--;
       this.ui.setAmmo(this.ammo, MAG_SIZE);
     }
@@ -365,7 +373,7 @@ export class Player {
     this.audio.shoot(od);
     this.shake(0.08, 0.002);
 
-    const spread = od ? 0.012 : 0.006;
+    const spread = this.aimTarget ? 0 : (od ? 0.012 : 0.006);
     this.raycaster.setFromCamera(new THREE.Vector2((Math.random() - 0.5) * spread, (Math.random() - 0.5) * spread), this.camera);
     this.raycaster.ray.direction.x += (Math.random() - 0.5) * spread;
     this.raycaster.ray.direction.normalize();
@@ -381,7 +389,7 @@ export class Player {
       end = h.point.clone();
       const enemy = this._findEnemy(h.object);
       if (enemy) {
-        const killed = enemy.hit(GUN_DAMAGE * (od ? 1.3 : 1), h.point, this.raycaster.ray.direction, 'gun');
+        const killed = enemy.hit(cheats.oneShot ? 99999 : GUN_DAMAGE * (od ? 1.3 : 1), h.point, this.raycaster.ray.direction, 'gun');
         this.ui.hitmarker(killed);
         this.audio.hit(killed);
       } else {
