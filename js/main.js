@@ -10,6 +10,10 @@ import { Player } from './player.js';
 import { EnemyManager } from './enemies.js';
 import { GameAudio } from './audio.js';
 import { UI } from './ui.js';
+import { ABILITIES } from './player.js';
+import { MODES } from './modes.js';
+import { storage } from './storage.js';
+import { SKINS, getSkin } from './skins.js';
 
 /* ---------- renderer / scene / camera ---------- */
 const canvas = document.getElementById('game');
@@ -25,7 +29,7 @@ scene.add(camera);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.55, 0.45, 0.82);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.38, 0.3, 0.9);
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
 
@@ -37,27 +41,56 @@ function onResize() {
 }
 window.addEventListener('resize', onResize);
 
+/* ---------- profile (coins, skins, bests) ---------- */
+const profile = storage.load();
+
+function saveProfile() {
+  storage.save(profile);
+}
+
 /* ---------- game object ---------- */
 const game = {
-  phase: 'menu', // menu | playing | paused | gameover
+  phase: 'menu', // menu | armory | playing | paused | gameover
+  modeId: 'siege',
   score: 0,
+  runCoins: 0,
   addScore(n) {
     this.score += n;
     ui.setScore(this.score);
+  },
+  addCoins(n) {
+    if (n <= 0) return;
+    this.runCoins += n;
+    profile.coins += n;
+    ui.setWallet(profile.coins);
   },
   getShootTargets() {
     const arr = world.raycastTargets.slice();
     for (const e of enemies.enemies) if (e.alive) arr.push(e.mesh);
     return arr;
   },
-  gameOver() {
+  _endRun(extracted) {
     this.phase = 'gameover';
-    audio.gameOver();
     audio.stopMusic();
-    ui.setGameOver(this.score, enemies.wave, enemies.kills);
+    if (extracted) audio.extract(); else audio.gameOver();
+    const mode = MODES[this.modeId];
+    const prevBest = profile.best[this.modeId] || 0;
+    profile.best[this.modeId] = Math.max(prevBest, this.score);
+    profile.totalKills += enemies.kills;
+    saveProfile();
+    ui.setBests(profile.best);
+    ui.setGameOver({
+      mode, score: this.score, wave: enemies.wave, kills: enemies.kills, coins: this.runCoins,
+      best: prevBest, extracted, blitz: mode.id === 'blitz',
+    });
+    ui.setBoss(null);
+    ui.setOverdrive(false);
     ui.setPhase('gameover');
     document.body.classList.remove('playing');
+    if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
   },
+  gameOver() { this._endRun(false); },
+  extract() { this._endRun(true); },
 };
 
 const ui = new UI();
@@ -67,9 +100,16 @@ const effects = new Effects(scene);
 const player = new Player(camera, world, effects, audio, ui, game);
 game.player = player;
 const enemies = new EnemyManager(scene, world, effects, audio, ui, game);
+game.enemies = enemies;
+player.applySkin(getSkin(profile.equipped));
+ui.setWallet(profile.coins);
+ui.setBests(profile.best);
+ui.setModeSelected(game.modeId);
+ui.setSaveWarning(!storage.persistent);
 
 /* ---------- debug overlay ---------- */
 const debugEl = document.getElementById('debug-overlay');
+debugEl.classList.add('hidden'); // press ` to show
 let frames = 0, lastDebug = performance.now(), lastFrameTime = performance.now();
 let frameTimes = [];
 function updateDebug() {
@@ -100,8 +140,16 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && game.phase === 'playing') e.preventDefault();
   player.keys[e.code] = true;
   if (e.code === 'KeyR') player.reload();
+  if (e.code === 'Backquote') debugEl.classList.toggle('hidden');
+  if (game.phase === 'playing' && !e.repeat) {
+    if (e.code === 'KeyQ') player.useAbility('dash');
+    if (e.code === 'KeyE') player.useAbility('shock');
+    if (e.code === 'KeyF') player.useAbility('overdrive');
+  }
   if ((e.code === 'Escape' || e.code === 'KeyP') && (game.phase === 'playing' || game.phase === 'paused')) {
     togglePause();
+  } else if (e.code === 'Escape' && game.phase === 'armory') {
+    closeArmory();
   }
 });
 window.addEventListener('keyup', (e) => {
@@ -256,14 +304,83 @@ function startGame() {
   audio.init();
   audio.ctx.resume();
   game.score = 0;
+  game.runCoins = 0;
   ui.setScore(0);
+  ui.setMultiplier(1);
+  ui.setOverdrive(false);
   player.reset();
-  enemies.startGame();
+  enemies.startGame(game.modeId);
   game.phase = 'playing';
   ui.setPhase('playing');
   audio.startMusic();
   requestLock();
   updateLockHint();
+}
+
+function goToMenu() {
+  if (game.phase === 'paused') {
+    // abandon run: keep coins already earned
+    profile.best[game.modeId] = Math.max(profile.best[game.modeId] || 0, game.score);
+    saveProfile();
+    ui.setBests(profile.best);
+  }
+  enemies.reset();
+  player.reset();
+  audio.stopMusic();
+  ui.setBoss(null);
+  ui.setOverdrive(false);
+  ui.setTimer(null);
+  game.phase = 'menu';
+  ui.setPhase('menu');
+  if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
+}
+
+/* ---------- armory ---------- */
+let armoryReturn = 'menu';
+function openArmory() {
+  armoryReturn = game.phase === 'gameover' ? 'gameover' : 'menu';
+  game.phase = 'armory';
+  renderArmory();
+  ui.setPhase('armory');
+}
+function closeArmory() {
+  game.phase = armoryReturn;
+  ui.setPhase(armoryReturn);
+}
+function renderArmory() {
+  ui.setWallet(profile.coins);
+  ui.renderArmory(profile, (action, skin) => {
+    audio.init();
+    if (action === 'buy') {
+      if (profile.coins < skin.price) { audio.deny(); return; }
+      profile.coins -= skin.price;
+      profile.owned.push(skin.id);
+      profile.equipped = skin.id;
+      audio.buy();
+    } else if (action === 'equip') {
+      profile.equipped = skin.id;
+      audio.pickup();
+    }
+    player.applySkin(getSkin(profile.equipped));
+    saveProfile();
+    renderArmory();
+  });
+}
+
+/* ---------- mode select ---------- */
+ui.el.modeSelect.addEventListener('click', (e) => {
+  const card = e.target.closest('.mode-card');
+  if (!card) return;
+  game.modeId = card.dataset.mode;
+  ui.setModeSelected(game.modeId);
+});
+ui.el.armoryBtn.addEventListener('click', openArmory);
+ui.el.armoryBtnGo.addEventListener('click', openArmory);
+ui.el.armoryBackBtn.addEventListener('click', closeArmory);
+ui.el.menuBtn.addEventListener('click', goToMenu);
+ui.el.menuBtnPause.addEventListener('click', goToMenu);
+for (const btn of ui.touchAbilityEls) {
+  btn.addEventListener('touchstart', (e) => { e.preventDefault(); player.useAbility(btn.dataset.ability); }, { passive: false });
 }
 
 function togglePause() {
@@ -306,6 +423,16 @@ window.render_game_to_text = () => {
   return JSON.stringify({
     note: 'origin at arena center; +x east, +z south, y up. arena is 60x60 (half=30).',
     phase: game.phase,
+    mode: game.modeId,
+    coins: profile.coins,
+    runCoins: game.runCoins,
+    skin: profile.equipped,
+    timeLeft: enemies.timeLeft == null ? null : +enemies.timeLeft.toFixed(1),
+    multiplier: enemies.multiplier,
+    cooldowns: { dash: +player.cd.dash.toFixed(1), shock: +player.cd.shock.toFixed(1), overdrive: +player.cd.overdrive.toFixed(1) },
+    overdriveT: +player.overdriveT.toFixed(1),
+    onGround: player.onGround,
+    projectiles: enemies.projectiles.length,
     player: {
       x: +player.pos.x.toFixed(2),
       y: +player.pos.y.toFixed(2),
@@ -320,7 +447,7 @@ window.render_game_to_text = () => {
     wave: enemies.wave,
     waveState: enemies.waveState,
     hostiles: enemies.enemies.map((e) => ({
-      type: e.type, x: +e.pos.x.toFixed(1), z: +e.pos.z.toFixed(1), hp: Math.round(e.hp),
+      type: e.type, x: +e.pos.x.toFixed(1), z: +e.pos.z.toFixed(1), hp: Math.round(e.hp), boss: !!e.isBoss,
     })),
     pendingSpawns: enemies.pendingSpawns.length,
     pickups: enemies.pickups.map((p) => ({ kind: p.kind, x: +p.mesh.position.x.toFixed(1), z: +p.mesh.position.z.toFixed(1) })),
@@ -351,7 +478,7 @@ function render() {
 
 let rafId = null;
 /* debug handles (also used by automated tests) */
-window.__game = { lock, renderer, scene, camera, composer, world, effects, player, enemies, game, ui, audio, bloomPass };
+window.__game = { lock, profile, MODES, SKINS, ABILITIES, renderer, scene, camera, composer, world, effects, player, enemies, game, ui, audio, bloomPass };
 window.__THREE = THREE;
 
 function animate() {

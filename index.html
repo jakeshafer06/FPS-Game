@@ -33,8 +33,21 @@
       <div id="score-info">
         <div class="hud-label">SCORE</div>
         <div id="score" class="hud-value">0</div>
+        <div id="coins-hud" class="hud-sub coins">◈ <span id="coins-num">0</span></div>
+        <div id="mult-info" class="hud-sub hidden">×<span id="mult-num">1.0</span> STREAK</div>
       </div>
     </div>
+    <div id="timer-info" class="hidden"><div class="hud-label">EXTRACTION IN</div><div id="timer-num" class="hud-value">2:30</div></div>
+    <div id="boss-bar" class="hidden">
+      <div id="boss-name" class="hud-label">WARDEN</div>
+      <div id="boss-track"><div id="boss-fill"></div></div>
+    </div>
+    <div id="ability-bar">
+      <div class="ability" data-ability="dash"><div class="ab-fill"></div><div class="ab-key">Q</div><div class="ab-name">DASH</div><div class="ab-cd"></div></div>
+      <div class="ability" data-ability="shock"><div class="ab-fill"></div><div class="ab-key">E</div><div class="ab-name">SHOCKWAVE</div><div class="ab-cd"></div></div>
+      <div class="ability" data-ability="overdrive"><div class="ab-fill"></div><div class="ab-key">F</div><div class="ab-name">OVERDRIVE</div><div class="ab-cd"></div></div>
+    </div>
+    <div id="overdrive-tint"></div>
 
     <div id="lock-hint" class="hidden">CLICK TO CAPTURE MOUSE</div>
     <div id="crosshair">
@@ -63,25 +76,64 @@
 
   <!-- Screens -->
   <div id="start-screen" class="screen">
-    <div class="screen-inner">
+    <div class="screen-inner wide">
       <div class="title-block">
-        <div class="title-kicker">ORBITAL DEFENSE PROTOCOL</div>
-        <h1 class="title">SHOOT<span class="title-accent">CLANKERS</span></h1>
-        <p class="tagline">Hold the arena. Survive the waves. The grid fights back.</p>
+        <div class="title-kicker">ORBITAL DEFENSE PROTOCOL — SECTOR 07</div>
+        <h1 class="title">SHOOT <span class="title-accent">CLANKERS</span></h1>
+        <p class="tagline">Hold the arena. Scrap the clankers. The grid fights back.</p>
       </div>
-      <div class="controls-grid">
+
+      <div class="hud-label section-label">SELECT OPERATION</div>
+      <div id="mode-select" class="mode-grid">
+        <button class="mode-card selected" data-mode="siege" style="--mode-color:#29e6ff">
+          <div class="mode-name">SIEGE</div><div class="mode-tag">ENDLESS WAVES</div>
+          <div class="mode-desc">Waves grow and new hostile classes join. A Warden arrives every fifth wave.</div>
+          <div class="mode-best">BEST <span data-best="siege">0</span></div>
+        </button>
+        <button class="mode-card" data-mode="blitz" style="--mode-color:#ffb020">
+          <div class="mode-name">BLITZ</div><div class="mode-tag">150s SCORE ATTACK · 1.5× COINS</div>
+          <div class="mode-desc">Nonstop hostiles, surging every 20s. Chain kills for a multiplier. Survive to extraction.</div>
+          <div class="mode-best">BEST <span data-best="blitz">0</span></div>
+        </button>
+        <button class="mode-card" data-mode="overlord" style="--mode-color:#ff2e6b">
+          <div class="mode-name">OVERLORD</div><div class="mode-tag">BOSS RUSH · 1.25× COINS</div>
+          <div class="mode-desc">Every wave is a Warden with an escort, each tougher than the last.</div>
+          <div class="mode-best">BEST <span data-best="overlord">0</span></div>
+        </button>
+      </div>
+
+      <div class="controls-grid compact">
         <div class="control-row"><span class="key">W A S D</span><span>Move</span></div>
-        <div class="control-row"><span class="key">MOUSE</span><span>Aim</span></div>
-        <div class="control-row"><span class="key">LMB</span><span>Fire</span></div>
+        <div class="control-row"><span class="key">MOUSE</span><span>Aim / Fire</span></div>
         <div class="control-row"><span class="key">SHIFT</span><span>Sprint</span></div>
         <div class="control-row"><span class="key">SPACE</span><span>Jump</span></div>
         <div class="control-row"><span class="key">R</span><span>Reload</span></div>
-        <div class="control-row"><span class="key">ESC</span><span>Pause</span></div>
+        <div class="control-row"><span class="key">Q</span><span class="ab-c">Dash</span></div>
+        <div class="control-row"><span class="key">E</span><span class="ab-c">Shockwave</span></div>
+        <div class="control-row"><span class="key">F</span><span class="ab-c">Overdrive</span></div>
       </div>
-      <button id="start-btn" class="btn btn-primary" disabled data-ready="0">LOADING SYSTEMS<span class="dots"></span></button>
+
+      <div class="btn-row">
+        <button id="start-btn" class="btn btn-primary" disabled data-ready="0">LOADING SYSTEMS<span class="dots"></span></button>
+        <button id="armory-btn" class="btn btn-ghost">ARMORY <span class="coins">◈ <span class="wallet">0</span></span></button>
+      </div>
       <div id="boot-error" class="boot-error hidden"></div>
       <div class="screen-note lock-note">Your mouse is captured while playing — press <span class="key">ESC</span> to release it.</div>
       <div class="screen-note free-note">Mouse capture isn't available in this window — mouse look uses free cursor movement. Open the game in its own tab for full capture.</div>
+      <div class="screen-note save-note hidden">Progress can't be saved in this window — coins and skins last for this session only.</div>
+    </div>
+  </div>
+
+  <div id="armory-screen" class="screen hidden">
+    <div class="screen-inner wide">
+      <div class="title-kicker">REQUISITIONS</div>
+      <h2 class="screen-title">ARMORY</h2>
+      <div class="wallet-row">WALLET <span class="coins big">◈ <span class="wallet">0</span></span></div>
+      <p class="tagline">Earn coins for every kill and cleared wave. Spend them on pulse rifle finishes.</p>
+      <div id="skin-grid" class="skin-grid"></div>
+      <div class="btn-row">
+        <button id="armory-back-btn" class="btn btn-primary">BACK</button>
+      </div>
     </div>
   </div>
 
@@ -95,21 +147,31 @@
         <input type="range" id="vol-range" min="0" max="100" step="5" value="70">
         <label class="check-row"><input type="checkbox" id="music-toggle" checked> MUSIC</label>
       </div>
-      <button id="resume-btn" class="btn btn-primary">RESUME</button>
-      <button id="restart-btn-pause" class="btn btn-ghost">RESTART</button>
+      <div class="btn-row">
+        <button id="resume-btn" class="btn btn-primary">RESUME</button>
+        <button id="restart-btn-pause" class="btn btn-ghost">RESTART</button>
+        <button id="menu-btn-pause" class="btn btn-ghost">MAIN MENU</button>
+      </div>
     </div>
   </div>
 
   <div id="gameover-screen" class="screen hidden">
     <div class="screen-inner">
-      <div class="title-kicker">SIGNAL LOST</div>
-      <h2 class="screen-title go-title">SYSTEM FAILURE</h2>
+      <div id="go-kicker" class="title-kicker">SIGNAL LOST</div>
+      <h2 id="go-title" class="screen-title go-title">SYSTEM FAILURE</h2>
+      <div id="go-mode" class="hud-label">SIEGE</div>
       <div class="stats-row">
         <div class="stat"><div class="hud-label">SCORE</div><div id="go-score" class="stat-value">0</div></div>
-        <div class="stat"><div class="hud-label">WAVE</div><div id="go-wave" class="stat-value">1</div></div>
+        <div class="stat"><div class="hud-label" id="go-wave-label">WAVE</div><div id="go-wave" class="stat-value">1</div></div>
         <div class="stat"><div class="hud-label">KILLS</div><div id="go-kills" class="stat-value">0</div></div>
+        <div class="stat"><div class="hud-label">COINS EARNED</div><div id="go-coins" class="stat-value coins">+0</div></div>
       </div>
-      <button id="restart-btn" class="btn btn-primary">REDEPLOY</button>
+      <div id="go-best" class="hud-sub">BEST 0</div>
+      <div class="btn-row">
+        <button id="restart-btn" class="btn btn-primary">REDEPLOY</button>
+        <button id="armory-btn-go" class="btn btn-ghost">ARMORY</button>
+        <button id="menu-btn" class="btn btn-ghost">MAIN MENU</button>
+      </div>
     </div>
   </div>
 
@@ -119,6 +181,11 @@
     <div id="touch-look" class="t-zone"></div>
     <button id="fire-btn">FIRE</button>
     <button id="jump-btn">JUMP</button>
+    <div id="touch-abilities">
+      <button class="t-ab" data-ability="dash">DASH</button>
+      <button class="t-ab" data-ability="shock">SHOCK</button>
+      <button class="t-ab" data-ability="overdrive">OVER</button>
+    </div>
   </div>
 
   <script>

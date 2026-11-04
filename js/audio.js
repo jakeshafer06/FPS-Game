@@ -72,8 +72,8 @@ export class GameAudio {
   }
 
   /* ---------- game SFX ---------- */
-  shoot() {
-    this._tone({ freq: 880, endFreq: 140, type: 'sawtooth', peak: 0.16, duration: 0.09 });
+  shoot(overdrive = false) {
+    this._tone({ freq: overdrive ? 1200 : 880, endFreq: overdrive ? 200 : 140, type: 'sawtooth', peak: 0.16, duration: 0.09 });
     this._noise({ peak: 0.14, duration: 0.07, filterFreq: 3800, type: 'highpass' });
   }
 
@@ -90,9 +90,60 @@ export class GameAudio {
     }
   }
 
-  enemyDeath() {
+  enemyDeath(boss = false) {
+    if (boss) {
+      this._tone({ freq: 160, endFreq: 20, type: 'sawtooth', peak: 0.5, duration: 1.4 });
+      this._noise({ peak: 0.5, duration: 1.2, filterFreq: 600 });
+      [262, 330, 392, 523, 659].forEach((f, i) => this._tone({ freq: f, type: 'triangle', peak: 0.14, duration: 0.5, delay: 0.5 + i * 0.1 }));
+      return;
+    }
     this._tone({ freq: 300, endFreq: 40, type: 'sawtooth', peak: 0.3, duration: 0.4 });
     this._noise({ peak: 0.25, duration: 0.25, filterFreq: 900 });
+  }
+
+  /* abilities */
+  dash() {
+    this._noise({ peak: 0.3, duration: 0.25, filterFreq: 2200, type: 'highpass' });
+    this._tone({ freq: 300, endFreq: 900, type: 'sine', peak: 0.12, duration: 0.2 });
+  }
+  shockwave() {
+    this._tone({ freq: 90, endFreq: 30, type: 'sawtooth', peak: 0.5, duration: 0.6 });
+    this._tone({ freq: 1800, endFreq: 200, type: 'square', peak: 0.1, duration: 0.3 });
+    this._noise({ peak: 0.45, duration: 0.5, filterFreq: 700 });
+  }
+  overdrive() {
+    [220, 330, 440, 660, 880].forEach((f, i) => this._tone({ freq: f, endFreq: f * 1.5, type: 'sawtooth', peak: 0.14, duration: 0.18, delay: i * 0.05 }));
+  }
+  abilityReady() {
+    this._tone({ freq: 1320, type: 'sine', peak: 0.07, duration: 0.08 });
+    this._tone({ freq: 1760, type: 'sine', peak: 0.07, duration: 0.1, delay: 0.07 });
+  }
+
+  /* hostile voices */
+  spit() {
+    this._tone({ freq: 500, endFreq: 150, type: 'triangle', peak: 0.14, duration: 0.18 });
+    this._noise({ peak: 0.1, duration: 0.1, filterFreq: 1800 });
+  }
+  bruteRoar() {
+    this._tone({ freq: 70, endFreq: 140, type: 'sawtooth', peak: 0.32, duration: 0.6 });
+    this._noise({ peak: 0.15, duration: 0.5, filterFreq: 400 });
+  }
+  blink() {
+    this._tone({ freq: 2000, endFreq: 400, type: 'sine', peak: 0.12, duration: 0.22 });
+    this._tone({ freq: 400, endFreq: 2000, type: 'sine', peak: 0.1, duration: 0.22, delay: 0.1 });
+  }
+  wardenFire() {
+    this._tone({ freq: 240, endFreq: 80, type: 'square', peak: 0.2, duration: 0.3 });
+    this._noise({ peak: 0.18, duration: 0.2, filterFreq: 1200 });
+  }
+  buy() {
+    [660, 880, 1320].forEach((f, i) => this._tone({ freq: f, type: 'triangle', peak: 0.12, duration: 0.14, delay: i * 0.07 }));
+  }
+  deny() {
+    this._tone({ freq: 200, endFreq: 150, type: 'square', peak: 0.1, duration: 0.15 });
+  }
+  extract() {
+    [392, 523, 659, 784, 1046, 1318].forEach((f, i) => this._tone({ freq: f, type: 'triangle', peak: 0.14, duration: 0.4, delay: i * 0.1 }));
   }
 
   enemyAttack() {

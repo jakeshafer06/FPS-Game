@@ -1,6 +1,6 @@
 Original prompt: help me make a fps game
 
-# SHOOT CLANKERS — wave-based arena FPS (Three.js, WebGL2)
+# SHOOT CLANKERS (formerly NEON SIEGE) — wave-based arena FPS (Three.js, WebGL2)
 
 ## Stack
 - Three.js 0.160.1 via esm.sh importmap; UnrealBloom + OutputPass post-processing
@@ -27,7 +27,7 @@ Original prompt: help me make a fps game
 ## Testing
 - window.render_game_to_text + window.advanceTime hooks exposed
 - Playwright client: skills/website-building/game/scripts/web_game_playwright_client.js
-- Serve locally: python3 -m http.server 5173 (from shoot-clankers dir)
+- Serve locally: python3 -m http.server 5173 (from neon-siege dir)
 
 ## TODO / notes for next agent
 - (none yet)
@@ -53,3 +53,12 @@ Original prompt: help me make a fps game
 ## Pointer lock (mouse capture)
 - Lock requested on DEPLOY/RESUME/REDEPLOY clicks and on canvas click; tries unadjustedMovement first, then default. Esc (native lock exit) pauses. Pause releases lock, resume re-locks.
 - Fallback: if the embedding frame forbids pointer lock (sandbox without allow-pointer-lock), game uses free-cursor mouse look and start screen shows a note to open in its own tab.
+
+## Expansion: modes, abilities, Sector 07, enemy roster, armory
+- Modes (`js/modes.js`): SIEGE (endless waves, Warden every 5th), BLITZ (150 s score attack, continuous spawns with surges every 20 s, streak multiplier up to 4x, 1.5x coins, timer expiry = extraction), OVERLORD (boss rush: Warden + escorts every wave, each Warden +35% HP).
+- Abilities (`js/player.js` ABILITIES): Q Dash (4 s cd, brief invulnerability), E Shockwave (12 s cd, 45 dmg + knockback within 9 m, full damage through Sentinel shields), F Overdrive (25 s cd, 6 s infinite ammo, 2x fire rate, 1.3x dmg). HUD `#ability-bar`, touch buttons `#touch-abilities`.
+- Map Sector 07 (`js/world.js`): 68x68 arena, two-tier steppable central dais with energy core, 4 quadrant bastions with cover walls, 8 portal spawn gates, neon arches, barriers, crates, wall signs, hazard bands, planet/star skybox. Collision via `world.resolve` (step height 1.1 → player can walk up tiers).
+- Enemies (`js/enemies.js`): Scout (weaving dart), Sentinel (frontal energy shield: gun hits from the front do 0.3x; turns slowly so flanking works), Spitter (keeps range, plasma projectiles), Brute (windup + charge), Phantom (blinks next to the player), Warden (boss: orbit, spread shots, summons scouts, enrages under 50%).
+- Economy: coins per kill (x mode multiplier), profile in `js/storage.js` (guarded localStorage, in-memory fallback + `.save-note`). Armory (`#armory-screen`) buys/equips 6 pulse-rifle skins (`js/skins.js`); `player.applySkin` recolors weapon + tracers; Prism hue-cycles.
+- Rendering fix: platform "trim" used to be a solid emissive box covering each platform top; together with full-width emissive lines it made UnrealBloom wash out the frame near the dais. Trims are now 4 thin edge bars below the top surface, emissive intensities ~1.0–1.1, bloom (0.38, 0.3, 0.9).
+- Test harness: `window.advanceTime(ms)` steps 60 Hz ticks then renders; `player._applyCamera` calls `camera.updateMatrixWorld()` so raycasts are correct inside stepped ticks. Headless test scripts: `output/functest.js`, `output/flowtest.js` (all passing).

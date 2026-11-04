@@ -40,6 +40,21 @@ export class Effects {
       this.tracers.push({ mesh: m, life: 0, maxLife: 0.07 });
     }
 
+    // --- shockwave rings ---
+    this.rings = [];
+    const ringGeo = new THREE.TorusGeometry(1, 0.08, 6, 48);
+    for (let i = 0; i < 4; i++) {
+      const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0x29e6ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+      m.rotation.x = Math.PI / 2;
+      m.visible = false;
+      scene.add(m);
+      this.rings.push({ mesh: m, life: 0, maxLife: 0.5, maxRadius: 9 });
+    }
+
+    // --- enemy projectiles ---
+    this.projGeo = new THREE.SphereGeometry(0.22, 10, 8);
+    this.projPool = [];
+
     // --- explosion light ---
     this.boomLight = new THREE.PointLight(0xffaa33, 0, 14, 2);
     scene.add(this.boomLight);
@@ -106,7 +121,7 @@ export class Effects {
     this.boomLife = 0.35;
   }
 
-  tracer(from, to) {
+  tracer(from, to, color = 0x8ef3ff) {
     let t = null;
     for (const tr of this.tracers) {
       if (!tr.mesh.visible) { t = tr; break; }
@@ -118,8 +133,38 @@ export class Effects {
     t.mesh.scale.set(1, 1, len);
     t.mesh.lookAt(to);
     t.mesh.visible = true;
+    t.mesh.material.color.setHex(color);
     t.mesh.material.opacity = 0.9;
     t.life = t.maxLife = 0.07;
+  }
+
+  /* Expanding shockwave ring (ability / boss telegraph) */
+  shockwave(pos, color = 0x29e6ff, maxRadius = 9, life = 0.5) {
+    let r = null;
+    for (const ring of this.rings) if (!ring.mesh.visible) { r = ring; break; }
+    if (!r) r = this.rings[0];
+    r.mesh.position.set(pos.x, pos.y, pos.z);
+    r.mesh.material.color.setHex(color);
+    r.mesh.visible = true;
+    r.life = r.maxLife = life;
+    r.maxRadius = maxRadius;
+    this.spawnBurst(pos.x, pos.y, pos.z, color, 40, 9, 0.5, 8, 2.0);
+  }
+
+  /* Projectile pool for ranged enemies: returns a mesh you own until release() */
+  acquireProjectile(color) {
+    let m = this.projPool.pop();
+    if (!m) {
+      m = new THREE.Mesh(this.projGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }));
+      this.scene.add(m);
+    }
+    m.material.color.setHex(color);
+    m.visible = true;
+    return m;
+  }
+  releaseProjectile(m) {
+    m.visible = false;
+    this.projPool.push(m);
   }
 
   update(dt) {
@@ -152,6 +197,17 @@ export class Effects {
       tr.life -= dt;
       if (tr.life <= 0) { tr.mesh.visible = false; continue; }
       tr.mesh.material.opacity = 0.9 * (tr.life / tr.maxLife);
+    }
+
+    // rings
+    for (const r of this.rings) {
+      if (!r.mesh.visible) continue;
+      r.life -= dt;
+      if (r.life <= 0) { r.mesh.visible = false; continue; }
+      const f = 1 - r.life / r.maxLife;
+      const rad = Math.max(0.05, r.maxRadius * Math.sqrt(f));
+      r.mesh.scale.set(rad, rad, 1);
+      r.mesh.material.opacity = 0.9 * (1 - f);
     }
 
     // boom light
