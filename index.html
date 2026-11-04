@@ -23,6 +23,16 @@
 
   <!-- HUD -->
   <div id="hud" class="hidden">
+    <div id="duel-hud" class="hidden">
+      <div class="dh-side dh-me"><div id="duel-me-name" class="hud-label">YOU</div><div id="duel-me" class="dh-score">0</div></div>
+      <div class="dh-mid"><div id="duel-target" class="hud-label">FIRST TO 10</div><div id="duel-time" class="dh-time">5:00</div><div id="duel-ping" class="dh-ping">-- ms</div></div>
+      <div class="dh-side dh-them"><div id="duel-them-name" class="hud-label">RIVAL</div><div id="duel-them" class="dh-score">0</div></div>
+    </div>
+    <div id="duel-dead" class="hidden">
+      <div class="dd-title">ELIMINATED</div>
+      <div class="dd-count">3</div>
+      <div id="duel-dead-sub" class="dd-sub"></div>
+    </div>
     <div id="top-bar">
       <div id="debug-overlay" aria-hidden="true"></div>
       <div id="wave-info">
@@ -101,6 +111,11 @@
           <div class="mode-desc">Every wave is a Warden with an escort, each tougher than the last.</div>
           <div class="mode-best">BEST <span data-best="overlord">0</span></div>
         </button>
+        <button class="mode-card" data-mode="duel" style="--mode-color:#b06bff">
+          <div class="mode-name">1V1 ONLINE</div><div class="mode-tag">PEER-TO-PEER · FIRST TO 10</div>
+          <div class="mode-desc">Host a room and send the code to a friend. Abilities on, clankers off, cheats off.</div>
+          <div class="mode-best" id="duel-record">RECORD 0W · 0L</div>
+        </button>
       </div>
 
       <div class="controls-grid compact">
@@ -135,6 +150,33 @@
       <div class="btn-row">
         <button id="armory-back-btn" class="btn btn-primary">BACK</button>
       </div>
+    </div>
+  </div>
+
+  <div id="lobby-screen" class="screen hidden">
+    <div class="screen-inner">
+      <div class="title-kicker">ONLINE DUEL</div>
+      <h2 class="screen-title">1V1 ARENA</h2>
+      <label class="lobby-field"><span class="hud-label">CALLSIGN</span>
+        <input id="lobby-name" type="text" maxlength="14" placeholder="PILOT" autocomplete="off" spellcheck="false"></label>
+      <div class="lobby-grid">
+        <div class="lobby-box">
+          <div class="hud-label">HOST A ROOM</div>
+          <button id="lobby-host-btn" class="btn btn-primary">CREATE ROOM</button>
+          <div id="lobby-code-wrap" class="hidden">
+            <div class="hud-label">ROOM CODE</div>
+            <div id="lobby-code" class="lobby-code">-----</div>
+            <button id="lobby-copy-btn" class="btn btn-ghost">COPY INVITE LINK</button>
+          </div>
+        </div>
+        <div class="lobby-box">
+          <div class="hud-label">JOIN A ROOM</div>
+          <input id="lobby-join-code" class="lobby-code-input" type="text" maxlength="5" placeholder="CODE" autocomplete="off" spellcheck="false">
+          <button id="lobby-join-btn" class="btn btn-primary">JOIN ROOM</button>
+        </div>
+      </div>
+      <div id="lobby-status" class="lobby-status"></div>
+      <button id="lobby-back-btn" class="btn btn-ghost">BACK</button>
     </div>
   </div>
 

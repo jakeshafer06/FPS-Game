@@ -88,6 +88,8 @@ export class UI {
     this.el.armoryScreen.classList.toggle('hidden', phase !== 'armory');
     this.el.pauseScreen.classList.toggle('hidden', phase !== 'paused');
     this.el.gameoverScreen.classList.toggle('hidden', phase !== 'gameover');
+    const lobby = document.getElementById('lobby-screen');
+    if (lobby) lobby.classList.toggle('hidden', phase !== 'lobby');
     this.el.touchControls.classList.toggle('hidden', !(this._isTouch && phase === 'playing'));
     document.body.classList.toggle('playing', phase === 'playing');
   }
@@ -264,7 +266,15 @@ export class UI {
     this._toastT = setTimeout(() => this.el.killToast.classList.remove('show'), big ? 1600 : 900);
   }
 
+  setGameOverLabels(labels) {
+    const ls = this.el.gameoverScreen.querySelectorAll('.stats-row .stat .hud-label');
+    labels.forEach((t, i) => { if (ls[i]) ls[i].textContent = t; });
+  }
+
   setGameOver({ mode, score, wave, kills, coins, best, extracted, blitz }) {
+    this.setGameOverLabels(['SCORE', blitz ? 'SURGE' : mode.id === 'overlord' ? 'WARDENS' : 'WAVE', 'KILLS', 'COINS EARNED']);
+    this.el.restartBtn.textContent = 'REDEPLOY';
+    this.el.restartBtn.disabled = false;
     this.el.goKicker.textContent = extracted ? 'EXTRACTION COMPLETE' : 'SIGNAL LOST';
     this.el.goTitle.textContent = extracted ? 'OPERATOR EXTRACTED' : 'SYSTEM FAILURE';
     this.el.goTitle.classList.toggle('go-title', !extracted);

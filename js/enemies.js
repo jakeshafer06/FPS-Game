@@ -769,6 +769,7 @@ export class EnemyManager {
 
   /* ---- per-frame ---- */
   update(dt, t) {
+    if (this.game.modeId === 'duel') return;
     const playerPos = this.game.player.pos;
     this.elapsed += dt;
 

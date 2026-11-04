@@ -15,6 +15,7 @@ import { MODES } from './modes.js';
 import { storage } from './storage.js';
 import { SKINS, getSkin } from './skins.js';
 import { cheats, initCheats, applyWallhack } from './cheats.js';
+import { Duel } from './duel.js';
 
 /* ---------- renderer / scene / camera ---------- */
 const canvas = document.getElementById('game');
@@ -68,6 +69,7 @@ const game = {
   getShootTargets() {
     const arr = world.raycastTargets.slice();
     for (const e of enemies.enemies) if (e.alive) arr.push(e.mesh);
+    if (duel.avatarTarget) arr.push(duel.avatarTarget.mesh);
     return arr;
   },
   _endRun(extracted) {
@@ -108,6 +110,53 @@ ui.setBests(profile.best);
 ui.setModeSelected(game.modeId);
 ui.setSaveWarning(!storage.persistent);
 
+/* ---------- online 1v1 ---------- */
+const duel = new Duel({ scene, world, effects, audio, ui, player, game, profile, saveProfile, onExit: () => goToMenu() });
+game.duel = duel;
+game.beginDuel = () => {
+  audio.init();
+  audio.ctx.resume();
+  game.modeId = 'duel';
+  game.score = 0;
+  game.runCoins = 0;
+  enemies.reset();
+  ui.setScore(0);
+  ui.setMultiplier(1);
+  ui.setOverdrive(false);
+  ui.setTimer(null);
+  ui.setBoss(null);
+  document.getElementById('cheat-badge').classList.add('hidden');
+  game.phase = 'playing';
+  ui.setPhase('playing');
+  audio.startMusic();
+  requestLock();
+  updateLockHint();
+};
+game.endDuel = (r) => {
+  game.phase = 'gameover';
+  audio.duckMusic();
+  audio.extract && r.good && audio.extract();
+  if (lock.active && document.exitPointerLock) document.exitPointerLock();
+  ui.el.goKicker.textContent = r.kicker;
+  ui.el.goTitle.textContent = r.title;
+  ui.el.goTitle.classList.toggle('go-title', !r.good);
+  ui.el.goTitle.classList.toggle('go-title-good', r.good);
+  ui.el.goMode.textContent = r.sub;
+  ui.setGameOverLabels(['YOUR KILLS', 'RIVAL KILLS', 'RESULT', 'COINS EARNED']);
+  ui.el.goScore.textContent = r.me;
+  ui.el.goWave.textContent = r.them;
+  ui.el.goKills.textContent = r.title === 'VICTORY' ? 'WIN' : r.title === 'DRAW' ? 'DRAW' : 'LOSS';
+  ui.el.goCoins.textContent = `+${game.runCoins}`;
+  ui.el.goBest.textContent = r.record;
+  ui.el.goBest.classList.remove('new-best');
+  ui.el.restartBtn.textContent = 'REMATCH';
+  ui.el.restartBtn.disabled = !r.canRematch;
+  ui.setWallet(profile.coins);
+  refreshDuelRecord();
+  ui.setPhase('gameover');
+  updateLockHint();
+};
+
 /* ---------- debug overlay ---------- */
 const debugEl = document.getElementById('debug-overlay');
 debugEl.classList.add('hidden'); // press ` to show
@@ -138,6 +187,11 @@ function updateDebug() {
 
 /* ---------- input ---------- */
 window.addEventListener('keydown', (e) => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+    if (e.code === 'Escape') e.target.blur();
+    return;
+  }
+  if (e.code === 'Escape' && game.phase === 'lobby') { duel.leave(); goToMenu(); return; }
   if (e.code === 'Space' && game.phase === 'playing') e.preventDefault();
   player.keys[e.code] = true;
   if (e.code === 'KeyR') player.reload();
@@ -319,7 +373,14 @@ function startGame() {
 }
 
 function goToMenu() {
-  if (game.phase === 'paused') {
+  if (duel.state !== 'idle') {
+    duel.leave(true);
+    if (game.modeId === 'duel') { game.phase = 'menu'; }
+  }
+  document.body.classList.remove('duel-mode');
+  ui.el.restartBtn.textContent = 'REDEPLOY';
+  ui.el.restartBtn.disabled = false;
+  if (game.phase === 'paused' && game.modeId !== 'duel') {
     // abandon run: keep coins already earned
     profile.best[game.modeId] = Math.max(profile.best[game.modeId] || 0, game.score);
     saveProfile();
@@ -390,19 +451,47 @@ function togglePause() {
     ui.setPhase('paused');
     document.body.classList.remove('playing');
     if (lock.active && document.exitPointerLock) document.exitPointerLock();
+    audio.duckMusic();
   } else if (game.phase === 'paused') {
     game.phase = 'playing';
     ui.setPhase('playing');
+    audio.startMusic();
     requestLock();
   }
   updateLockHint();
 }
 
-ui.el.startBtn.addEventListener('click', startGame);
+function refreshDuelRecord() {
+  const r = profile.duel || { wins: 0, losses: 0, draws: 0 };
+  const el = document.getElementById('duel-record');
+  if (el) el.textContent = `RECORD ${r.wins}W · ${r.losses}L${r.draws ? ' · ' + r.draws + 'D' : ''}`;
+}
+refreshDuelRecord();
+{
+  const m = /#join=([A-Za-z0-9]{5})/.exec(location.hash);
+  if (m) {
+    game.modeId = 'duel';
+    ui.setModeSelected('duel');
+    setTimeout(() => duel.openLobby(m[1]), 0);
+  }
+}
+ui.el.startBtn.addEventListener('click', () => {
+  if (game.modeId === 'duel') { audio.unlock(); duel.openLobby(); }
+  else startGame();
+});
+
+/* soundtrack starts on the first click / key / tap anywhere (browsers block autoplay before that) */
+for (const ev of ['pointerdown', 'keydown', 'touchstart']) {
+  window.addEventListener(ev, () => audio.unlock(), { capture: true, passive: true });
+}
 
 /* ---------- secret cheat console (type IMBOT, or tap the menu title 5x) ---------- */
 let pausedForCheats = false;
 const cheatUI = initCheats({
+  canOpen() {
+    if (duel.inMatch) { ui.killToast('CHEATS ARE OFF IN ONLINE MATCHES', 0, false); return false; }
+    return true;
+  },
   onOpen() {
     audio.init();
     audio.abilityReady && audio.abilityReady();
@@ -431,7 +520,10 @@ ui.el.startBtn.disabled = false;
 ui.el.startBtn.dataset.ready = '1';
 ui.el.startBtn.textContent = 'DEPLOY';
 ui.el.resumeBtn.addEventListener('click', togglePause);
-ui.el.restartBtn.addEventListener('click', startGame);
+ui.el.restartBtn.addEventListener('click', () => {
+  if (duel.active) duel.requestRematch();
+  else startGame();
+});
 ui.el.restartBtnPause.addEventListener('click', startGame);
 
 ui.el.sensRange.addEventListener('input', () => {
@@ -478,6 +570,7 @@ window.render_game_to_text = () => {
       type: e.type, x: +e.pos.x.toFixed(1), z: +e.pos.z.toFixed(1), hp: Math.round(e.hp), boss: !!e.isBoss,
     })),
     pendingSpawns: enemies.pendingSpawns.length,
+    duel: duel.debugState(),
     pickups: enemies.pickups.map((p) => ({ kind: p.kind, x: +p.mesh.position.x.toFixed(1), z: +p.mesh.position.z.toFixed(1) })),
     kills: enemies.kills,
   });
@@ -496,6 +589,7 @@ function tick(dt) {
   world.update(dt, clock.elapsedTime);
   player.update(dt);
   enemies.update(cheats.slowmo ? dt * 0.4 : dt, clock.elapsedTime);
+  duel.update(dt, clock.elapsedTime);
   applyWallhack(enemies.enemies);
   effects.update(dt);
 }
@@ -507,7 +601,7 @@ function render() {
 
 let rafId = null;
 /* debug handles (also used by automated tests) */
-window.__game = { cheats, cheatUI, lock, profile, MODES, SKINS, ABILITIES, renderer, scene, camera, composer, world, effects, player, enemies, game, ui, audio, bloomPass };
+window.__game = { duel, cheats, cheatUI, lock, profile, MODES, SKINS, ABILITIES, renderer, scene, camera, composer, world, effects, player, enemies, game, ui, audio, bloomPass };
 window.__THREE = THREE;
 
 function animate() {

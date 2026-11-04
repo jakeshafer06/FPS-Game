@@ -1,4 +1,9 @@
-/* Procedural Web Audio: SFX + looping dark synth track. No external files. */
+/* Web Audio: procedural SFX + the Shoot Clankers soundtrack (assets/audio/bg-music.mp3).
+   The old procedural synth loop is kept as a fallback if the track can't load. */
+
+const MUSIC_URL = './assets/audio/bg-music.mp3';
+const MUSIC_LEVEL_PLAY = 0.55;  // during matches
+const MUSIC_LEVEL_MENU = 0.3;   // menus, pause, game over
 
 export class GameAudio {
   constructor() {
@@ -25,11 +30,58 @@ export class GameAudio {
     this.sfxGain.gain.value = 0.9;
     this.sfxGain.connect(this.master);
     this.started = true;
+    this._initTrack();
+  }
+
+  /* ---------- soundtrack (file) ---------- */
+  _initTrack() {
+    const el = new Audio();
+    el.src = MUSIC_URL;
+    el.loop = true;
+    el.preload = 'auto';
+    el.crossOrigin = 'anonymous';
+    this.trackEl = el;
+    this.trackFailed = false;
+    this.trackGain = this.ctx.createGain();
+    this.trackGain.gain.value = 0;
+    this.trackGain.connect(this.musicGain);
+    try {
+      this.ctx.createMediaElementSource(el).connect(this.trackGain);
+    } catch (e) {
+      // very old browsers: play the element directly (volume handled on the element)
+      this.trackDirect = true;
+    }
+    el.addEventListener('error', () => { this.trackFailed = true; if (this._wantMusic) this._startSynth(); });
+    this.musicLevel = MUSIC_LEVEL_MENU;
+    this._wantMusic = true;
+    this._applyTrack();
+  }
+
+  _applyTrack(fade = 0.8) {
+    if (!this.trackEl || this.trackFailed) return;
+    const target = this.musicOn && this._wantMusic ? this.musicLevel : 0;
+    if (this.trackDirect) this.trackEl.volume = target * this.volume;
+    const g = this.trackGain.gain, t = this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(target, t + fade);
+    if (target > 0 && this.trackEl.paused) {
+      const pr = this.trackEl.play();
+      if (pr && pr.catch) pr.catch(() => {}); // retried on next user gesture
+    }
+  }
+
+  // Called from any user gesture so the soundtrack can start on the menu.
+  unlock() {
+    this.init();
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.trackEl && this.trackEl.paused) this._applyTrack();
   }
 
   setVolume(v) {
     this.volume = v;
     if (this.master) this.master.gain.value = v;
+    if (this.trackDirect && this.trackEl) this.trackEl.volume = (this.musicOn ? this.musicLevel : 0) * v;
   }
 
   /* ---------- SFX primitives ---------- */
@@ -186,7 +238,23 @@ export class GameAudio {
   }
 
   /* ---------- music: dark synthwave loop ---------- */
+  // In-match music level.
   startMusic() {
+    if (!this.ctx) return;
+    this._wantMusic = true;
+    this.musicLevel = MUSIC_LEVEL_PLAY;
+    if (this.trackEl && !this.trackFailed) { this._applyTrack(1.2); return; }
+    this._startSynth();
+  }
+
+  // Back to menu/pause/game-over level (the track keeps looping underneath).
+  duckMusic() {
+    if (!this.ctx) return;
+    this.musicLevel = MUSIC_LEVEL_MENU;
+    if (this.trackEl && !this.trackFailed) this._applyTrack(1.0);
+  }
+
+  _startSynth() {
     if (!this.ctx || this.musicTimer) return;
     this._nextNoteTime = this.ctx.currentTime + 0.1;
     this._step16 = 0;
@@ -203,6 +271,7 @@ export class GameAudio {
   }
 
   stopMusic() {
+    this.duckMusic();
     if (this.musicTimer) {
       clearInterval(this.musicTimer);
       this.musicTimer = null;
@@ -211,6 +280,7 @@ export class GameAudio {
 
   setMusic(on) {
     this.musicOn = on;
+    if (this.trackEl) this._applyTrack(0.3);
   }
 
   _mnote(freq, time, dur, type, peak, filterFreq) {

@@ -92,7 +92,7 @@ export function applyWallhack(enemies) {
 }
 
 /* ---- UI ---- */
-export function initCheats({ onOpen, onClose, onCoins, onUnlockAll }) {
+export function initCheats({ onOpen, onClose, onCoins, onUnlockAll, canOpen }) {
   const panel = document.getElementById('cheat-panel');
   const list = document.getElementById('cheat-list');
   const badge = document.getElementById('cheat-badge');
@@ -113,6 +113,7 @@ export function initCheats({ onOpen, onClose, onCoins, onUnlockAll }) {
 
   function open() {
     if (!panel.classList.contains('hidden')) return;
+    if (canOpen && !canOpen()) return;
     onOpen && onOpen();
     renderList();
     panel.classList.remove('hidden');

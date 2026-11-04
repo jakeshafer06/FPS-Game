@@ -165,7 +165,9 @@ export class Player {
       this.effects.shockwave(origin, this.skin.accent, 9, 0.55);
       this.audio.shockwave();
       this.shake(0.3, 0.02);
-      const enemies = this.game.enemies ? this.game.enemies.enemies : [];
+      const enemies = (this.game.enemies ? this.game.enemies.enemies : []).slice();
+      if (this.game.duel && this.game.duel.avatarTarget) enemies.push(this.game.duel.avatarTarget);
+      if (this.game.duel) this.game.duel.onLocalShock(origin, this.skin.accent);
       let hitCount = 0;
       for (const e of enemies) {
         if (!e.alive) continue;
@@ -214,6 +216,8 @@ export class Player {
     this.audio.hurt();
     if (this.health <= 0) {
       this.alive = false;
+      this.fireHeld = false;
+      if (this.game.onPlayerDeath && this.game.onPlayerDeath()) return; // online duel: respawn instead
       this.game.gameOver();
     }
   }
@@ -229,6 +233,7 @@ export class Player {
   /* ---- per-frame ---- */
   update(dt) {
     if (this.game.phase !== 'playing') return;
+    if (!this.alive) return;
 
     this.fireT -= dt;
     this.invuln = Math.max(0, this.invuln - dt);
@@ -397,6 +402,7 @@ export class Player {
       }
     }
     this.effects.tracer(muzzle, end, tracerColor);
+    if (this.game.duel) this.game.duel.onLocalShot(muzzle, end, tracerColor);
   }
 
   _findEnemy(obj) {

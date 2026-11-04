@@ -67,3 +67,11 @@ Original prompt: help me make a fps game
 - `js/cheats.js`: type `IMBOT` anywhere (letters unused by gameplay keys) or tap the menu title 5x within 2 s. Opening mid-game pauses; closing resumes. Esc closes.
 - Toggles: aimbot (while firing, snaps to best visible enemy in a ~75° cone with LOS raycast against world.raycastTargets, zero spread), wallhack (enemy materials depthTest=false, renderOrder 999), god, one-shot (gun + shockwave), infinite ammo, no cooldowns, speed 1.8x, slow-mo (enemy dt x0.4). Buttons: all on/off, +5000 coins, unlock all skins. HUD badge "CHEATS ACTIVE".
 - Tests: `output/cheattest.js` (27 checks, all passing).
+
+## Background music + Online 1v1
+- Music: assets/audio/bg-music.mp3 (user track, 128k), HTMLAudio -> WebAudio gain; 0.3 on menus, 0.55 in play, ducks on pause/game over, follows volume + music toggle; synth fallback if the file fails.
+- 1V1 ONLINE mode (js/duel.js): PeerJS (vendored) peer-to-peer via the public PeerJS broker, 5-char room codes, #join=CODE invite links.
+- Rules: first to 10 or 5:00, 3s respawn, spawn shield, gun dmg x0.5 (headshots x1.6), shockwave 35, regen after 4s. Coins: 3/kill, 40 win, 12 loss. Cheats forced off in matches. Clankers disabled.
+- Victim-authoritative hits; 8s heartbeat = forfeit; rematch on both sides.
+- Tested: two browser contexts over real WebRTC — connect, sync, hits, deaths, end, rematch, disconnect forfeit. functest 21/21, cheattest 27/27, flowtest unchanged vs previous build.
+- No TURN server: some strict networks may fail to connect.
