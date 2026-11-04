@@ -1,6 +1,6 @@
 Original prompt: help me make a fps game
 
-# NEON SIEGE — wave-based arena FPS (Three.js, WebGL2)
+# SHOOT CLANKERS — wave-based arena FPS (Three.js, WebGL2)
 
 ## Stack
 - Three.js 0.160.1 via esm.sh importmap; UnrealBloom + OutputPass post-processing
@@ -27,7 +27,7 @@ Original prompt: help me make a fps game
 ## Testing
 - window.render_game_to_text + window.advanceTime hooks exposed
 - Playwright client: skills/website-building/game/scripts/web_game_playwright_client.js
-- Serve locally: python3 -m http.server 5173 (from neon-siege dir)
+- Serve locally: python3 -m http.server 5173 (from shoot-clankers dir)
 
 ## TODO / notes for next agent
 - (none yet)
