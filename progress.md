@@ -75,3 +75,15 @@ Original prompt: help me make a fps game
 - Victim-authoritative hits; 8s heartbeat = forfeit; rematch on both sides.
 - Tested: two browser contexts over real WebRTC — connect, sync, hits, deaths, end, rematch, disconnect forfeit. functest 21/21, cheattest 27/27, flowtest unchanged vs previous build.
 - No TURN server: some strict networks may fail to connect.
+
+## Cheats online + arsenal
+- Cheats now work in online 1v1 (no longer disabled). Aimbot and wallhack also target the rival.
+- New toggles: Fly (SPACE up / C down), Noclip, Super Jump, Rapid Fire (3x), Explosive Ammo.
+- Arsenal (console, or keys 1-6 after the console has been opened once): Pulse Rifle, Minigun, Scattergun, Railgun (pierces walls), Rocket Launcher (splash + knockback), Chain Zapper (arcs to 5). Each has its own viewmodel, sound, tracer.
+- Online: wide/long tracers and explosions sync via 'shot' w/l fields and new 'boom' message; splash knockback sent to victim.
+- Tests: cheat2test 24/24, cheattest 27/27, functest 21/21, online cheat e2e (fly sync, railgun kill over network, rocket boom received).
+
+## Mouse lock fix (online)
+- Bug: online matches start from a network message (no click), so the browser refused pointer lock and the game permanently fell back to free-cursor mode.
+- Fix: requestLock() skips non-gesture calls (navigator.userActivation) and shows CLICK TO CAPTURE MOUSE; any click in play retries the lock, and a successful lock clears free-cursor mode. Clicks on HUD pieces also capture.
+- Also: rival health bar (over head + HUD), damage applies while paused in online matches, labels don't absorb bullets.

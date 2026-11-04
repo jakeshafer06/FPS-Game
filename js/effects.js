@@ -30,7 +30,7 @@ export class Effects {
     // --- tracer pool ---
     this.tracers = [];
     const tracerGeo = new THREE.BoxGeometry(0.03, 0.03, 1);
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 48; i++) {
       const m = new THREE.Mesh(
         tracerGeo,
         new THREE.MeshBasicMaterial({ color: 0x8ef3ff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
@@ -121,7 +121,7 @@ export class Effects {
     this.boomLife = 0.35;
   }
 
-  tracer(from, to, color = 0x8ef3ff) {
+  tracer(from, to, color = 0x8ef3ff, width = 1, life = 0.07) {
     let t = null;
     for (const tr of this.tracers) {
       if (!tr.mesh.visible) { t = tr; break; }
@@ -130,12 +130,12 @@ export class Effects {
     const dir = new THREE.Vector3().subVectors(to, from);
     const len = dir.length();
     t.mesh.position.copy(from).addScaledVector(dir, 0.5);
-    t.mesh.scale.set(1, 1, len);
+    t.mesh.scale.set(width, width, len);
     t.mesh.lookAt(to);
     t.mesh.visible = true;
     t.mesh.material.color.setHex(color);
     t.mesh.material.opacity = 0.9;
-    t.life = t.maxLife = 0.07;
+    t.life = t.maxLife = life;
   }
 
   /* Expanding shockwave ring (ability / boss telegraph) */

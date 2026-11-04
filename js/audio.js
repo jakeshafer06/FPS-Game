@@ -129,6 +129,32 @@ export class GameAudio {
     this._noise({ peak: 0.14, duration: 0.07, filterFreq: 3800, type: 'highpass' });
   }
 
+  gunShot(id, overdrive = false) {
+    if (id === 'rifle') return this.shoot(overdrive);
+    if (id === 'minigun') {
+      this._tone({ freq: 640, endFreq: 180, type: 'sawtooth', peak: 0.09, duration: 0.05 });
+      this._noise({ peak: 0.1, duration: 0.04, filterFreq: 4200, type: 'highpass' });
+    } else if (id === 'shotgun') {
+      this._tone({ freq: 180, endFreq: 40, type: 'sawtooth', peak: 0.32, duration: 0.22 });
+      this._noise({ peak: 0.42, duration: 0.25, filterFreq: 1600 });
+    } else if (id === 'railgun') {
+      this._tone({ freq: 2400, endFreq: 90, type: 'sawtooth', peak: 0.22, duration: 0.5 });
+      this._tone({ freq: 60, endFreq: 30, type: 'sine', peak: 0.4, duration: 0.45 });
+      this._noise({ peak: 0.2, duration: 0.4, filterFreq: 5000, type: 'highpass' });
+    } else if (id === 'rocket') {
+      this._noise({ peak: 0.3, duration: 0.35, filterFreq: 900 });
+      this._tone({ freq: 140, endFreq: 70, type: 'square', peak: 0.12, duration: 0.3 });
+    } else if (id === 'zapper') {
+      this._tone({ freq: 1800, endFreq: 400, type: 'square', peak: 0.1, duration: 0.12 });
+      this._tone({ freq: 2600, endFreq: 900, type: 'sawtooth', peak: 0.06, duration: 0.1, delay: 0.02 });
+    } else this.shoot(overdrive);
+  }
+
+  boom() {
+    this._tone({ freq: 120, endFreq: 25, type: 'sawtooth', peak: 0.5, duration: 0.7 });
+    this._noise({ peak: 0.6, duration: 0.7, filterFreq: 650 });
+  }
+
   dryFire() {
     this._tone({ freq: 220, endFreq: 120, type: 'square', peak: 0.06, duration: 0.06 });
   }

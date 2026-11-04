@@ -154,7 +154,7 @@ export class UI {
 
   setAmmo(current, mag) {
     this.el.ammo.innerHTML = `${current}<span class="ammo-mag">/ ${mag}</span>`;
-    this._ammoLow = typeof current === 'number' && current <= 6 && current > 0;
+    this._ammoLow = typeof current === 'number' && current <= Math.max(1, Math.round(mag * 0.2)) && current > 0;
     this.el.reloadHint.classList.toggle('show', this._ammoLow);
   }
 

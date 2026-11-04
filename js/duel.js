@@ -81,7 +81,35 @@ function makeNameTag(text, color) {
   const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false });
   const s = new THREE.Sprite(mat);
   s.scale.set(2.2, 0.41, 1);
+  s.raycast = () => {}; // bullets pass through floating labels
   return s;
+}
+
+/* floating health bar above the rival */
+function makeHpBar() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 32;
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, fog: false });
+  const s = new THREE.Sprite(mat);
+  s.scale.set(1.1, 0.14, 1);
+  s.raycast = () => {};
+  s.userData.canvas = c;
+  return s;
+}
+function drawHpBar(sprite, hp) {
+  const c = sprite.userData.canvas, ctx = c.getContext('2d');
+  const f = Math.max(0, Math.min(1, hp / 100));
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.fillStyle = f > 0.6 ? '#39ff6e' : f > 0.3 ? '#ffcf3a' : '#ff2e6b';
+  ctx.fillRect(4, 4, (c.width - 8) * f, c.height - 8);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, c.width - 2, c.height - 2);
+  sprite.material.map.needsUpdate = true;
 }
 
 /* ---------- the rival operator, rendered on this client ---------- */
@@ -99,6 +127,10 @@ class RivalAvatar {
     this.pitch = 0;
     this.walkT = 0;
     this.flashT = 0;
+    this.netHp = 100;      // last health the rival reported
+    this.predHp = null;    // our local guess right after we hit them (hides network delay)
+    this.predT = 0;
+    this.shownHp = 100;
     this.mesh = new THREE.Group();
     this.mesh.userData.enemyRef = this;          // lets player.shoot() treat us as a target
     this._build();
@@ -152,6 +184,11 @@ class RivalAvatar {
     this.mesh.add(this.light);
     this.tagColor = '#ff6b93';
     this.setName('RIVAL');
+    this.hpBar = makeHpBar();
+    this.hpBar.position.y = 2.0;
+    this.mesh.add(this.hpBar);
+    this._drawnHp = -1;
+    this.resetHp();
   }
 
   setName(name) {
@@ -172,6 +209,20 @@ class RivalAvatar {
     this.animated = !!skin.animated;
   }
 
+  resetHp() {
+    this.netHp = 100; this.predHp = null; this.predT = 0; this.shownHp = 100;
+    this._refreshHp();
+  }
+  _refreshHp() {
+    const shown = this.predT > 0 && this.predHp != null ? Math.min(this.predHp, this.netHp) : this.netHp;
+    this.shownHp = shown;
+    const r = Math.round(shown);
+    if (r === this._drawnHp) return;
+    this._drawnHp = r;
+    drawHpBar(this.hpBar, r);
+    this.duel._renderRivalHp && this.duel._renderRivalHp(r);
+  }
+
   place(x, y, z, yaw) {
     this.pos.set(x, y, z); this.target.set(x, y, z);
     this.yaw = this.targetYaw = yaw;
@@ -181,18 +232,23 @@ class RivalAvatar {
   hit(dmg, point, dir, source) {
     if (!this.alive) return false;
     let d, head = false;
-    if (source === 'shock') d = DUEL.shockDmg;
+    if (source === 'shock') d = cheats.oneShot ? 99999 : DUEL.shockDmg;
     else {
-      head = point && point.y > this.pos.y - 0.2;
+      head = source === 'gun' && point && point.y > this.pos.y - 0.2;
       d = dmg * DUEL.gunScale * (head ? DUEL.headMult : 1);
     }
     this.flashT = 0.08;
+    this.predHp = Math.max(0, (this.predT > 0 && this.predHp != null ? this.predHp : this.shownHp) - d);
+    this.predT = 0.6;
+    this._refreshHp();
     this.duel._sendHit(d, source, dir, head);
     return false; // the victim confirms kills
   }
 
   update(dt, t) {
     this.mesh.visible = this.alive;
+    if (this.predT > 0) { this.predT -= dt; if (this.predT <= 0) this.predHp = null; }
+    this._refreshHp();
     if (!this.alive) return;
     // smooth toward the latest network position
     const k = Math.min(1, dt * 14);
@@ -257,7 +313,7 @@ export class Duel {
       screen: $('lobby-screen'), name: $('lobby-name'), hostBtn: $('lobby-host-btn'), codeWrap: $('lobby-code-wrap'),
       code: $('lobby-code'), copyBtn: $('lobby-copy-btn'), joinCode: $('lobby-join-code'), joinBtn: $('lobby-join-btn'),
       status: $('lobby-status'), back: $('lobby-back-btn'),
-      hud: $('duel-hud'), meName: $('duel-me-name'), themName: $('duel-them-name'), me: $('duel-me'), them: $('duel-them'),
+      hud: $('duel-hud'), meName: $('duel-me-name'), themName: $('duel-them-name'), me: $('duel-me'), them: $('duel-them'), themHp: $('duel-them-hp'),
       time: $('duel-time'), target: $('duel-target'), dead: $('duel-dead'), deadSub: $('duel-dead-sub'), ping: $('duel-ping'),
     };
     this.el.hostBtn.addEventListener('click', () => this.host());
@@ -430,7 +486,7 @@ export class Duel {
     this.avatar.mesh.visible = false;
     this._showHud(false);
     this.el.dead.classList.add('hidden');
-    if (wasActive) this._restoreCheats();
+
     this.game.onPlayerDeath = null;
     this.code = null;
     if (!silent) this._status('');
@@ -472,8 +528,17 @@ export class Duel {
       case 'shot': {
         if (!this.inMatch) break;
         const from = new THREE.Vector3().fromArray(msg.f), to = new THREE.Vector3().fromArray(msg.e);
-        this.effects.tracer(from, to, msg.c);
-        this.audio.shoot && this.audio.shoot(false);
+        this.effects.tracer(from, to, msg.c, msg.w || 1, msg.l || 0.07);
+        const now = performance.now();
+        if (!this._lastShotSfx || now - this._lastShotSfx > 45) { this._lastShotSfx = now; this.audio.shoot && this.audio.shoot(false); }
+        break;
+      }
+      case 'boom': {
+        if (!this.inMatch) break;
+        const p = new THREE.Vector3().fromArray(msg.p);
+        this.effects.explosion(p.x, p.y, p.z, msg.c);
+        this.effects.shockwave(p, msg.c, msg.r || 6, 0.4);
+        this.audio.boom ? this.audio.boom() : (this.audio.shockwave && this.audio.shockwave());
         break;
       }
       case 'shock': {
@@ -500,10 +565,11 @@ export class Duel {
     a.targetYaw = m.y;
     a.pitch = m.pi;
     a.alive = !!m.a;
+    if (typeof m.h === 'number') a.netHp = m.h;
     a.overdrive = !!m.od;
     a.netSpeed = m.sp || 0;
     if (m.sk && m.sk !== a.skinId) a.setSkin(m.sk);
-    if (a.alive && !was) a.pos.copy(a.target);
+    if (a.alive && !was) { a.pos.copy(a.target); a.resetHp(); if (typeof m.h === 'number') a.netHp = m.h; }
   }
 
   _onHit(m) {
@@ -511,14 +577,14 @@ export class Duel {
     this.lastHurtT = 0;
     this._lastHitHead = !!m.hd;
     this._lastHitKind = m.k;
-    if (m.k === 'shock' && m.kn) { this.player.vel.x += m.kn[0] * 10; this.player.vel.z += m.kn[1] * 10; this.player.vel.y = Math.max(this.player.vel.y, 4); }
+    if ((m.k === 'shock' || m.k === 'splash') && m.kn) { this.player.vel.x += m.kn[0] * 10; this.player.vel.z += m.kn[1] * 10; this.player.vel.y = Math.max(this.player.vel.y, 4); }
     this.player.damage(m.d);
   }
 
   _sendHit(d, source, dir, head) {
     if (!this.inMatch) return;
     const msg = { t: 'hit', d: Math.round(d * 10) / 10, k: source, hd: head ? 1 : 0 };
-    if (source === 'shock' && dir) msg.kn = [r2(dir.x), r2(dir.z)];
+    if ((source === 'shock' || source === 'splash') && dir) msg.kn = [r2(dir.x), r2(dir.z)];
     this._send(msg);
     if (head) this.ui.killToast('HEADSHOT', 0, false);
   }
@@ -534,7 +600,7 @@ export class Duel {
   _beginMatch(msg) {
     this.lastRecv = performance.now();
     this.closeLobby();
-    this._disableCheats();
+
     this.state = 'match';
     this.scores = { me: 0, them: 0 };
     this.timeLeft = msg.time || DUEL.time;
@@ -546,6 +612,7 @@ export class Duel {
     this._spawnLocal(mine);
     this.avatar.place(theirs.x, 1.65, theirs.z, theirs.yaw);
     this.avatar.alive = true;
+    this.avatar.resetHp();
     this.el.meName.textContent = this._myName();
     this.el.themName.textContent = this.oppName;
     this.el.target.textContent = `FIRST TO ${msg.target || DUEL.killTarget}`;
@@ -595,6 +662,7 @@ export class Duel {
     const a = this.avatar;
     this.effects.explosion(a.pos.x, a.pos.y - 0.8, a.pos.z, 0xff2e6b);
     a.alive = false; a.mesh.visible = false;
+    a.netHp = 0; a.predHp = null; a.predT = 0;
     this.audio.enemyDeath && this.audio.enemyDeath(true);
     this.ui.hitmarker && this.ui.hitmarker(true);
     this.game.addCoins(DUEL.killCoins);
@@ -625,7 +693,7 @@ export class Duel {
     this.profile.duel = this.profile.duel || { wins: 0, losses: 0, draws: 0 };
     if (win) this.profile.duel.wins++; else if (draw) this.profile.duel.draws++; else this.profile.duel.losses++;
     this.saveProfile();
-    this._restoreCheats();
+
     this._showHud(false);
     this.game.endDuel({
       kicker: forfeit ? 'RIVAL DISCONNECTED' : reason === 'time' ? 'TIME' : 'DUEL COMPLETE',
@@ -676,7 +744,9 @@ export class Duel {
       this.respawnT -= dt;
       this.el.dead.querySelector('.dd-count').textContent = Math.max(1, Math.ceil(this.respawnT));
       if (this.respawnT <= 0) { this.el.dead.classList.add('hidden'); this._spawnLocal(this._pickRespawn()); }
-    } else if (this.game.phase === 'playing') {
+    } else {
+      // player.update() is frozen while paused, so tick the spawn shield down here too
+      if (this.game.phase !== 'playing' && p.invuln > 0) p.invuln = Math.max(0, p.invuln - dt);
       // regen after a few seconds without taking damage
       this.lastHurtT += dt;
       if (this.lastHurtT > DUEL.regenDelay && p.health < 100) {
@@ -690,7 +760,7 @@ export class Duel {
     if (this.sendT <= 0) {
       this.sendT = 1 / DUEL.sendRate;
       const sp = p.vel ? Math.hypot(p.vel.x, p.vel.z) : 0;
-      this._send({ t: 's', p: [r2(p.pos.x), r2(p.pos.y), r2(p.pos.z)], y: r2(p.yaw), pi: r2(p.pitch), a: p.alive ? 1 : 0, od: p.overdriveT > 0 ? 1 : 0, sp: r2(sp), sk: this.profile.equipped });
+      this._send({ t: 's', p: [r2(p.pos.x), r2(p.pos.y), r2(p.pos.z)], y: r2(p.yaw), pi: r2(p.pitch), a: p.alive ? 1 : 0, h: Math.max(0, Math.round(p.health)), od: p.overdriveT > 0 ? 1 : 0, sp: r2(sp), sk: this.profile.equipped });
     }
     // heartbeat: a closed tab can take ~30s to surface as a WebRTC close
     if (this.lastRecv && performance.now() - this.lastRecv > 8000) { this._onDisconnect(); return; }
@@ -700,13 +770,26 @@ export class Duel {
   }
 
   // hooks called from player.js
-  onLocalShot(from, to, color) {
+  onLocalShot(from, to, color, w = 1, life = 0.07) {
     if (!this.inMatch) return;
-    this._send({ t: 'shot', f: [r2(from.x), r2(from.y), r2(from.z)], e: [r2(to.x), r2(to.y), r2(to.z)], c: color });
+    const msg = { t: 'shot', f: [r2(from.x), r2(from.y), r2(from.z)], e: [r2(to.x), r2(to.y), r2(to.z)], c: color };
+    if (w !== 1) msg.w = w;
+    if (life !== 0.07) msg.l = life;
+    this._send(msg);
+  }
+  onLocalBoom(pos, color, radius) {
+    if (!this.inMatch) return;
+    this._send({ t: 'boom', p: [r2(pos.x), r2(pos.y), r2(pos.z)], c: color, r: radius });
   }
   onLocalShock(pos, color) {
     if (!this.inMatch) return;
     this._send({ t: 'shock', p: [r2(pos.x), r2(pos.y), r2(pos.z)], c: color });
+  }
+
+  _renderRivalHp(hp) {
+    if (!this.el || !this.el.themHp) return;
+    this.el.themHp.style.width = hp + '%';
+    this.el.themHp.classList.toggle('low', hp <= 30);
   }
 
   _renderScore() {
@@ -718,18 +801,6 @@ export class Duel {
     this.el.hud.classList.toggle('hidden', !on);
     document.body.classList.toggle('duel-mode', on || this.state === 'over');
     if (!on && this.state !== 'over') document.body.classList.remove('duel-mode');
-  }
-
-  /* online matches are always fair: cheats are switched off for the match and restored after */
-  _disableCheats() {
-    if (this._savedCheats) return;
-    this._savedCheats = { ...cheats };
-    for (const k in cheats) cheats[k] = false;
-  }
-  _restoreCheats() {
-    if (!this._savedCheats) return;
-    Object.assign(cheats, this._savedCheats);
-    this._savedCheats = null;
   }
 
   debugState() {

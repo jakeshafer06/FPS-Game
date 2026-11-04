@@ -26,7 +26,7 @@
     <div id="duel-hud" class="hidden">
       <div class="dh-side dh-me"><div id="duel-me-name" class="hud-label">YOU</div><div id="duel-me" class="dh-score">0</div></div>
       <div class="dh-mid"><div id="duel-target" class="hud-label">FIRST TO 10</div><div id="duel-time" class="dh-time">5:00</div><div id="duel-ping" class="dh-ping">-- ms</div></div>
-      <div class="dh-side dh-them"><div id="duel-them-name" class="hud-label">RIVAL</div><div id="duel-them" class="dh-score">0</div></div>
+      <div class="dh-side dh-them"><div id="duel-them-name" class="hud-label">RIVAL</div><div id="duel-them" class="dh-score">0</div><div class="dh-hp"><div id="duel-them-hp"></div></div></div>
     </div>
     <div id="duel-dead" class="hidden">
       <div class="dd-title">ELIMINATED</div>
@@ -74,7 +74,7 @@
     </div>
 
     <div id="ammo-panel" class="hud-panel">
-      <div class="hud-label">PULSE RIFLE</div>
+      <div id="weapon-name" class="hud-label">PULSE RIFLE</div>
       <div id="ammo" class="hud-value">30<span class="ammo-mag">/ 30</span></div>
       <div id="reload-hint">R — RELOAD</div>
     </div>
@@ -229,13 +229,15 @@
         <button id="cheat-close" class="btn btn-small btn-ghost" aria-label="Close">CLOSE</button>
       </div>
       <div id="cheat-list"></div>
+      <div class="hud-label cheat-section">// ARSENAL — or press 1-6 in game</div>
+      <div id="cheat-guns"></div>
       <div class="cheat-actions">
         <button id="cheat-all" class="btn btn-small btn-ghost">ALL ON</button>
         <button id="cheat-none" class="btn btn-small btn-ghost">ALL OFF</button>
         <button id="cheat-coins" class="btn btn-small btn-ghost">+5,000 &#9670;</button>
         <button id="cheat-unlock" class="btn btn-small btn-ghost">UNLOCK ALL SKINS</button>
       </div>
-      <p class="cheat-foot">Type <b>IMBOT</b> again or press <b>ESC</b> to close.</p>
+      <p class="cheat-foot">Type <b>IMBOT</b> again or press <b>ESC</b> to close. Works in online matches too.</p>
     </div>
   </div>
 

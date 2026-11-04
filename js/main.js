@@ -14,7 +14,7 @@ import { ABILITIES } from './player.js';
 import { MODES } from './modes.js';
 import { storage } from './storage.js';
 import { SKINS, getSkin } from './skins.js';
-import { cheats, initCheats, applyWallhack } from './cheats.js';
+import { cheats, initCheats, applyWallhack, anyCheatOn, GUNS, cheatGun } from './cheats.js';
 import { Duel } from './duel.js';
 
 /* ---------- renderer / scene / camera ---------- */
@@ -125,7 +125,7 @@ game.beginDuel = () => {
   ui.setOverdrive(false);
   ui.setTimer(null);
   ui.setBoss(null);
-  document.getElementById('cheat-badge').classList.add('hidden');
+  document.getElementById('cheat-badge').classList.toggle('hidden', !anyCheatOn());
   game.phase = 'playing';
   ui.setPhase('playing');
   audio.startMusic();
@@ -197,6 +197,10 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') player.reload();
   if (e.code === 'Backquote') debugEl.classList.toggle('hidden');
   if (game.phase === 'playing' && !e.repeat) {
+    if (cheatGun.unlocked && /^Digit[1-6]$/.test(e.code)) {
+      const g = Object.values(GUNS).find((x) => x.key === +e.code.slice(5));
+      if (g && g.id !== player.gun.id) { player.setGun(g.id); ui.killToast(g.name, 0, false); cheatUI.renderList(); }
+    }
     if (e.code === 'KeyQ') player.useAbility('dash');
     if (e.code === 'KeyE') player.useAbility('shock');
     if (e.code === 'KeyF') player.useAbility('overdrive');
@@ -226,8 +230,17 @@ function updateLockHint() {
   lockHint.classList.toggle('hidden', !show);
   document.body.classList.toggle('free-cursor', lock.failed);
 }
-function requestLock() {
-  if (!lock.supported || lock.active || lock.requesting || lock.failed) return;
+// Browsers only grant pointer lock right after a click or key press. Calls that come from
+// somewhere else (e.g. an online match starting from a network message) are refused, so we
+// skip them and show "click to capture" instead of mistaking the refusal for "lock unsupported".
+function hasUserActivation() {
+  const ua = navigator.userActivation;
+  return !ua || ua.isActive;
+}
+function requestLock(fromGesture = false) {
+  if (!lock.supported || lock.active || lock.requesting) return;
+  if (lock.failed && !fromGesture) return;
+  if (!fromGesture && !hasUserActivation()) { updateLockHint(); return; }
   lock.requesting = true;
   // Attempt 1: raw (unaccelerated) mouse motion. Attempt 2: default lock.
   // Only after both fail do we drop into free-cursor fallback.
@@ -260,6 +273,7 @@ document.addEventListener('pointerlockchange', () => {
   lock.active = document.pointerLockElement === canvas;
   lock.requesting = false;
   if (lock.active) {
+    lock.failed = false; // a later click worked — leave free-cursor mode
     document.body.classList.add('locked');
   } else {
     document.body.classList.remove('locked');
@@ -279,9 +293,17 @@ window.addEventListener('mousemove', (e) => {
 
 canvas.addEventListener('mousedown', (e) => {
   if (e.button !== 0 || game.phase !== 'playing') return;
-  if (lock.supported && !lock.failed && !lock.active) { requestLock(); return; }
+  if (lock.supported && !lock.failed && !lock.active) { requestLock(true); return; }
+  // free-cursor fallback: keep shooting, but quietly retry the lock with this real click
+  if (lock.supported && lock.failed && !lock.active) requestLock(true);
   player.startFire();
 });
+// clicks that land on HUD pieces instead of the canvas should still capture the mouse
+document.addEventListener('mousedown', (e) => {
+  if (e.button !== 0 || game.phase !== 'playing' || e.target === canvas) return;
+  if (e.target.closest && e.target.closest('button, input, a, #cheat-panel')) return;
+  if (lock.supported && !lock.active) requestLock(true);
+}, true);
 window.addEventListener('mouseup', (e) => {
   if (e.button === 0) player.stopFire();
 });
@@ -487,11 +509,10 @@ for (const ev of ['pointerdown', 'keydown', 'touchstart']) {
 
 /* ---------- secret cheat console (type IMBOT, or tap the menu title 5x) ---------- */
 let pausedForCheats = false;
+const cheatBadgeEl = document.getElementById('cheat-badge');
+let cheatBadgeOn = null;
 const cheatUI = initCheats({
-  canOpen() {
-    if (duel.inMatch) { ui.killToast('CHEATS ARE OFF IN ONLINE MATCHES', 0, false); return false; }
-    return true;
-  },
+  onGun(id) { player.setGun(id); },
   onOpen() {
     audio.init();
     audio.abilityReady && audio.abilityReady();
@@ -590,7 +611,8 @@ function tick(dt) {
   player.update(dt);
   enemies.update(cheats.slowmo ? dt * 0.4 : dt, clock.elapsedTime);
   duel.update(dt, clock.elapsedTime);
-  applyWallhack(enemies.enemies);
+  applyWallhack(duel.avatarTarget ? [...enemies.enemies, duel.avatarTarget] : enemies.enemies);
+  if (game.phase === 'playing') { const on = anyCheatOn(); if (on !== cheatBadgeOn) { cheatBadgeOn = on; cheatBadgeEl.classList.toggle('hidden', !on); } }
   effects.update(dt);
 }
 
