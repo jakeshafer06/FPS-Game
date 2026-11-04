@@ -50,6 +50,25 @@ function loadPeerJS() {
   });
 }
 
+// Optional TURN relay: configure VITE_TURN_URLS, VITE_TURN_USERNAME and
+// VITE_TURN_CREDENTIAL in Netlify environment variables and redeploy.
+// TURN credentials are visible to browsers; use short-lived credentials from
+// your relay provider, not a permanent administrator password.
+function iceServers() {
+  const servers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
+  ];
+  const urls = String(import.meta.env.VITE_TURN_URLS || '').split(',').map(x => x.trim()).filter(Boolean);
+  const username = String(import.meta.env.VITE_TURN_USERNAME || '');
+  const credential = String(import.meta.env.VITE_TURN_CREDENTIAL || '');
+  if (urls.length && username && credential) {
+    servers.push({ urls, username, credential });
+  }
+  return servers;
+}
+
 function makeCode() {
   let c = '';
   const buf = new Uint32Array(5);
@@ -375,11 +394,7 @@ export class Duel {
     return new Promise((resolve, reject) => {
       const peer = new window.Peer(id, {
         debug: 0,
-        config: { iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478' },
-        ] },
+        config: { iceServers: iceServers(), iceTransportPolicy: 'all' },
       });
       let opened = false;
       peer.on('open', () => { opened = true; resolve(peer); });
