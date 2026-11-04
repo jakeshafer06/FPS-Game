@@ -1,18 +1,8 @@
-/* Online 1v1 duels — peer-to-peer over WebRTC (PeerJS).
-   One player hosts a room and shares a 5-letter code; the other joins with it.
-   The free PeerJS cloud broker (0.peerjs.com) only introduces the two browsers —
-   all game traffic then flows directly between them.
-
-   Netcode model (built for playing with friends, not anti-cheat):
-   - each client owns its own movement and sends state ~20x/sec
-   - the shooter checks hits against where it SEES the rival and sends a "hit"
-   - the victim applies damage to itself and announces its own death
-   - first to KILL_TARGET or most kills when the clock runs out (host decides time-out) */
+/* Online 1v1 duels — central WebSocket relay. Both players connect to the same server. */
 import * as THREE from 'three';
 import { getSkin } from './skins.js';
 import { cheats } from './cheats.js';
 
-const PEER_PREFIX = 'shootclankers-v1-';
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const PROTOCOL = 1;
 
@@ -39,34 +29,14 @@ const SPAWNS = [
   { x: -26, z: -4, yaw: -Math.PI / 2 },
 ];
 
-function loadPeerJS() {
-  if (window.Peer) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = './vendor/peerjs/peerjs.min.js';
-    s.onload = () => (window.Peer ? resolve() : reject(new Error('Networking library failed to start')));
-    s.onerror = () => reject(new Error('Could not load the networking library'));
-    document.head.appendChild(s);
-  });
-}
-
-// Optional TURN relay: configure VITE_TURN_URLS, VITE_TURN_USERNAME and
-// VITE_TURN_CREDENTIAL in Netlify environment variables and redeploy.
-// TURN credentials are visible to browsers; use short-lived credentials from
-// your relay provider, not a permanent administrator password.
-function iceServers() {
-  const servers = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' },
-  ];
-  const urls = String(import.meta.env.VITE_TURN_URLS || '').split(',').map(x => x.trim()).filter(Boolean);
-  const username = String(import.meta.env.VITE_TURN_USERNAME || '');
-  const credential = String(import.meta.env.VITE_TURN_CREDENTIAL || '');
-  if (urls.length && username && credential) {
-    servers.push({ urls, username, credential });
-  }
-  return servers;
+// Configure VITE_MULTIPLAYER_URL with the secure WSS endpoint of your hosted server.
+const MULTIPLAYER_URL = String(import.meta.env.VITE_MULTIPLAYER_URL || '').trim();
+function getServerUrl() {
+  if (!MULTIPLAYER_URL) throw new Error('Multiplayer server is not configured. Set VITE_MULTIPLAYER_URL in Netlify and redeploy.');
+  const url = new URL(MULTIPLAYER_URL);
+  if (!['wss:', 'ws:'].includes(url.protocol)) throw new Error('Multiplayer URL must use wss://');
+  if (location.protocol === 'https:' && url.protocol !== 'wss:') throw new Error('Secure websites require a wss:// multiplayer server.');
+  return url.toString();
 }
 
 function makeCode() {
@@ -301,7 +271,7 @@ class RivalAvatar {
 export class Duel {
   constructor({ scene, world, effects, audio, ui, player, game, profile, saveProfile, onExit }) {
     Object.assign(this, { scene, world, effects, audio, ui, player, game, profile, saveProfile, onExit });
-    this.peer = null;
+    this.socket = null;
     this.conn = null;
     this.isHost = false;
     this.code = null;
@@ -388,21 +358,56 @@ export class Duel {
     catch (e) { this._status(`Share this code: ${this.code}`); }
   }
 
-  /* ===== connection ===== */
-  async _makePeer(id) {
-    await loadPeerJS();
+  /* ===== central-server connection ===== */
+  async _connectToServer(action, code) {
+    const url = getServerUrl();
     return new Promise((resolve, reject) => {
-      const peer = new window.Peer(id, {
-        debug: 0,
-        config: { iceServers: iceServers(), iceTransportPolicy: 'all' },
-      });
-      let opened = false;
-      peer.on('open', () => { opened = true; resolve(peer); });
-      peer.on('error', (err) => {
-        if (!opened) { try { peer.destroy(); } catch (e) {} reject(err); return; }
-        this._onPeerError(err);
-      });
-      peer.on('disconnected', () => { if (this.peer === peer && !peer.destroyed) { try { peer.reconnect(); } catch (e) {} } });
+      const socket = new WebSocket(url);
+      this.socket = socket;
+      let settled = false;
+      const timeout = setTimeout(() => fail(new Error('Server connection timed out.')), 12000);
+      const fail = (error) => {
+        if (settled) return;
+        settled = true; clearTimeout(timeout);
+        try { socket.close(); } catch (_) {}
+        reject(error);
+      };
+      socket.onopen = () => socket.send(JSON.stringify({ op: action, code }));
+      socket.onmessage = (event) => {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch (_) { return; }
+        if (msg.op === 'error') {
+          if (!settled) fail(new Error(msg.message || 'Room unavailable.'));
+          else this._status(msg.message || 'Connection error', 'error');
+          return;
+        }
+        if (msg.op === 'ready') {
+          if (!settled) { settled = true; clearTimeout(timeout); resolve(msg); }
+          return;
+        }
+        if (msg.op === 'paired') {
+          const conn = {
+            open: true,
+            send: (payload) => {
+              if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ op: 'data', payload }));
+            },
+            close: () => socket.close(),
+          };
+          this.conn = conn;
+          this._send({ t: 'hello', v: PROTOCOL, name: this._myName(), skin: this.profile.equipped });
+          this._status('Connected. Syncing…', 'ok');
+          return;
+        }
+        if (msg.op === 'data' && this.conn) this._onData(msg.payload);
+        if (msg.op === 'opponent_left') this._onDisconnect();
+      };
+      socket.onerror = () => {
+        if (!settled) fail(new Error('Could not connect to the multiplayer server. Check its URL and availability.'));
+      };
+      socket.onclose = () => {
+        if (!settled) fail(new Error('Multiplayer server closed the connection.'));
+        else if (this.socket === socket && this.conn) this._onDisconnect();
+      };
     });
   }
 
@@ -413,26 +418,14 @@ export class Duel {
     this.state = 'connecting';
     this.el.hostBtn.disabled = true; this.el.joinBtn.disabled = true;
     this._status('Opening a room…');
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const code = makeCode();
-      try {
-        this.peer = await this._makePeer(PEER_PREFIX + code);
-        this.code = code;
-        break;
-      } catch (err) {
-        if (err && err.type === 'unavailable-id') continue;
-        this._fail(err); return;
-      }
-    }
-    if (!this.peer) { this._fail(new Error('Could not reserve a room code')); return; }
-    this.state = 'hosting';
-    this.el.code.textContent = this.code;
-    this.el.codeWrap.classList.remove('hidden');
-    this._status('Room open. Send the code to your rival — waiting for them to join…');
-    this.peer.on('connection', (conn) => {
-      if (this.conn) { conn.on('open', () => { conn.send({ t: 'full' }); setTimeout(() => conn.close(), 300); }); return; }
-      this._attach(conn);
-    });
+    try {
+      const result = await this._connectToServer('create', makeCode());
+      this.code = result.code;
+      this.state = 'hosting';
+      this.el.code.textContent = this.code;
+      this.el.codeWrap.classList.remove('hidden');
+      this._status('Room open. Share the code — waiting for your rival…');
+    } catch (err) { this._fail(err); }
   }
 
   async join(rawCode) {
@@ -444,35 +437,14 @@ export class Duel {
     this.state = 'connecting';
     this.el.hostBtn.disabled = true; this.el.joinBtn.disabled = true;
     this._status(`Connecting to room ${code}…`);
-    try { this.peer = await this._makePeer(undefined); }
-    catch (err) { this._fail(err); return; }
-    this.state = 'joining';
-    this.code = code;
-    const conn = this.peer.connect(PEER_PREFIX + code, { serialization: 'json', reliable: true });
-    this._attach(conn);
-    this._joinTimer = setTimeout(() => {
-      if (this.state === 'joining') this._fail(new Error(`Couldn't reach room ${code}. Check the code, or the networks may be blocking direct connections.`));
-    }, 15000);
-  }
-
-  _attach(conn) {
-    this.conn = conn;
-    conn.on('open', () => {
-      clearTimeout(this._joinTimer);
-      this._send({ t: 'hello', v: PROTOCOL, name: this._myName(), skin: this.profile.equipped });
-      this._status('Connected. Syncing…', 'ok');
-    });
-    conn.on('data', (msg) => this._onData(msg));
-    conn.on('close', () => this._onDisconnect());
-    conn.on('error', () => this._onDisconnect());
-  }
-
-  _onPeerError(err) {
-    if (this.state === 'joining' && err && err.type === 'peer-unavailable') {
-      this._fail(new Error(`Room ${this.code} doesn't exist (or the host closed it).`));
-    } else if (this.state !== 'match' && this.state !== 'over') {
-      this._fail(err);
-    }
+    try {
+      await this._connectToServer('join', code);
+      this.code = code;
+      this.state = 'joining';
+      this._joinTimer = setTimeout(() => {
+        if (this.state === 'joining') this._fail(new Error('Room pairing timed out. Try again.'));
+      }, 15000);
+    } catch (err) { this._fail(err); }
   }
 
   _fail(err) {
@@ -492,9 +464,9 @@ export class Duel {
     clearTimeout(this._joinTimer);
     clearTimeout(this._startTimer);
     if (this.conn) { try { this._send({ t: 'bye' }); } catch (e) {} }
-    const conn = this.conn, peer = this.peer;
-    this.conn = null; this.peer = null;
-    setTimeout(() => { try { conn && conn.close(); } catch (e) {} try { peer && peer.destroy(); } catch (e) {} }, 150);
+    const socket = this.socket;
+    this.conn = null; this.socket = null;
+    if (socket) { try { socket.close(); } catch (_) {} }
     const wasActive = this.active;
     this.state = 'idle';
     this.avatar.alive = false;
@@ -512,6 +484,7 @@ export class Duel {
     const wasMatch = this.state === 'match';
     const wasOver = this.state === 'over';
     this.conn = null;
+    if (this.socket) { const socket = this.socket; this.socket = null; socket.close(); }
     if (wasMatch) { this._end('disconnect'); return; }
     if (wasOver) { this.ui.el.goBest.textContent = 'RIVAL LEFT THE ROOM'; this.ui.el.restartBtn.disabled = true; return; }
     this.leave(true);
