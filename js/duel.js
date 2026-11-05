@@ -1,19 +1,8 @@
-/* Online 1v1 duels — peer-to-peer over WebRTC (PeerJS).
-   One player hosts a room and shares a 5-letter code; the other joins with it.
-   The free PeerJS cloud broker (0.peerjs.com) only introduces the two browsers —
-   all game traffic then flows directly between them.
-
-   Netcode model (built for playing with friends, not anti-cheat):
-   - each client owns its own movement and sends state ~20x/sec
-   - the shooter checks hits against where it SEES the rival and sends a "hit"
-   - the victim applies damage to itself and announces its own death
-   - first to KILL_TARGET or most kills when the clock runs out (host decides time-out) */
+/* Online 1v1 duels via a central WebSocket server on Render. */
 import * as THREE from 'three';
 import { getSkin } from './skins.js';
 import { cheats } from './cheats.js';
 
-const PEER_PREFIX = 'shootclankers-v1-';
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const PROTOCOL = 1;
 
 export const DUEL = {
@@ -39,35 +28,7 @@ const SPAWNS = [
   { x: -26, z: -4, yaw: -Math.PI / 2 },
 ];
 
-function loadPeerJS() {
-  if (window.Peer) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = './vendor/peerjs/peerjs.min.js';
-    s.onload = () => (window.Peer ? resolve() : reject(new Error('Networking library failed to start')));
-    s.onerror = () => reject(new Error('Could not load the networking library'));
-    document.head.appendChild(s);
-  });
-}
-
-// Optional TURN relay: configure VITE_TURN_URLS, VITE_TURN_USERNAME and
-// VITE_TURN_CREDENTIAL in Netlify environment variables and redeploy.
-// TURN credentials are visible to browsers; use short-lived credentials from
-// your relay provider, not a permanent administrator password.
-function iceServers() {
-  const servers = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' },
-  ];
-  const urls = String(import.meta.env.VITE_TURN_URLS || '').split(',').map(x => x.trim()).filter(Boolean);
-  const username = String(import.meta.env.VITE_TURN_USERNAME || '');
-  const credential = String(import.meta.env.VITE_TURN_CREDENTIAL || '');
-  if (urls.length && username && credential) {
-    servers.push({ urls, username, credential });
-  }
-  return servers;
-}
+const MULTIPLAYER_URL = String(import.meta.env.VITE_MULTIPLAYER_URL || '').trim();
 
 function makeCode() {
   let c = '';
@@ -301,7 +262,6 @@ class RivalAvatar {
 export class Duel {
   constructor({ scene, world, effects, audio, ui, player, game, profile, saveProfile, onExit }) {
     Object.assign(this, { scene, world, effects, audio, ui, player, game, profile, saveProfile, onExit });
-    this.peer = null;
     this.conn = null;
     this.isHost = false;
     this.code = null;
@@ -389,20 +349,54 @@ export class Duel {
   }
 
   /* ===== connection ===== */
-  async _makePeer(id) {
-    await loadPeerJS();
-    return new Promise((resolve, reject) => {
-      const peer = new window.Peer(id, {
-        debug: 0,
-        config: { iceServers: iceServers(), iceTransportPolicy: 'all' },
-      });
-      let opened = false;
-      peer.on('open', () => { opened = true; resolve(peer); });
-      peer.on('error', (err) => {
-        if (!opened) { try { peer.destroy(); } catch (e) {} reject(err); return; }
-        this._onPeerError(err);
-      });
-      peer.on('disconnected', () => { if (this.peer === peer && !peer.destroyed) { try { peer.reconnect(); } catch (e) {} } });
+  async _connect(op, code = '') {
+    if (!MULTIPLAYER_URL || !/^wss?:\/\//i.test(MULTIPLAYER_URL)) {
+      this._fail(new Error('Set VITE_MULTIPLAYER_URL to your Render wss:// URL and rebuild the website.'));
+      return;
+    }
+    const ws = new WebSocket(MULTIPLAYER_URL);
+    this.conn = ws;
+    let ready = false;
+    const timer = setTimeout(() => {
+      if (this.conn === ws && !ready) this._fail(new Error('Server connection timed out. Check Render service status.'));
+    }, 20000);
+    ws.addEventListener('open', () => {
+      if (this.conn !== ws) return;
+      ws.send(JSON.stringify({ op, ...(code ? { code } : {}) }));
+    });
+    ws.addEventListener('message', (event) => {
+      if (this.conn !== ws) return;
+      let msg;
+      try { msg = JSON.parse(event.data); } catch { return; }
+      if (msg.op === 'ready') {
+        ready = true; clearTimeout(timer);
+        this.code = msg.code;
+        this.state = this.isHost ? 'hosting' : 'joining';
+        if (this.isHost) {
+          this.el.code.textContent = this.code;
+          this.el.codeWrap.classList.remove('hidden');
+          this._status('Room open. Share the code — waiting for your rival…');
+        } else this._status('Room found. Waiting for the host…', 'ok');
+      } else if (msg.op === 'paired') {
+        this._status('Connected. Syncing…', 'ok');
+        this._send({ t: 'hello', v: PROTOCOL, name: this._myName(), skin: this.profile.equipped });
+      } else if (msg.op === 'data') {
+        this._onData(msg.payload);
+      } else if (msg.op === 'opponent_left') {
+        this._onDisconnect();
+      } else if (msg.op === 'error') {
+        this._fail(new Error(msg.message || 'Server rejected the request.'));
+      }
+    });
+    ws.addEventListener('error', () => {
+      if (this.conn === ws && !ready) this._fail(new Error('Could not connect to Render WebSocket server.'));
+    });
+    ws.addEventListener('close', () => {
+      clearTimeout(timer);
+      if (this.conn === ws) {
+        if (!ready) this._fail(new Error('Render WebSocket connection closed before room was ready.'));
+        else this._onDisconnect();
+      }
     });
   }
 
@@ -412,27 +406,8 @@ export class Duel {
     this.isHost = true;
     this.state = 'connecting';
     this.el.hostBtn.disabled = true; this.el.joinBtn.disabled = true;
-    this._status('Opening a room…');
-    for (let attempt = 0; attempt < 4; attempt++) {
-      const code = makeCode();
-      try {
-        this.peer = await this._makePeer(PEER_PREFIX + code);
-        this.code = code;
-        break;
-      } catch (err) {
-        if (err && err.type === 'unavailable-id') continue;
-        this._fail(err); return;
-      }
-    }
-    if (!this.peer) { this._fail(new Error('Could not reserve a room code')); return; }
-    this.state = 'hosting';
-    this.el.code.textContent = this.code;
-    this.el.codeWrap.classList.remove('hidden');
-    this._status('Room open. Send the code to your rival — waiting for them to join…');
-    this.peer.on('connection', (conn) => {
-      if (this.conn) { conn.on('open', () => { conn.send({ t: 'full' }); setTimeout(() => conn.close(), 300); }); return; }
-      this._attach(conn);
-    });
+    this._status('Connecting to Render and opening a room…');
+    await this._connect('create');
   }
 
   async join(rawCode) {
@@ -444,35 +419,7 @@ export class Duel {
     this.state = 'connecting';
     this.el.hostBtn.disabled = true; this.el.joinBtn.disabled = true;
     this._status(`Connecting to room ${code}…`);
-    try { this.peer = await this._makePeer(undefined); }
-    catch (err) { this._fail(err); return; }
-    this.state = 'joining';
-    this.code = code;
-    const conn = this.peer.connect(PEER_PREFIX + code, { serialization: 'json', reliable: true });
-    this._attach(conn);
-    this._joinTimer = setTimeout(() => {
-      if (this.state === 'joining') this._fail(new Error(`Couldn't reach room ${code}. Check the code, or the networks may be blocking direct connections.`));
-    }, 15000);
-  }
-
-  _attach(conn) {
-    this.conn = conn;
-    conn.on('open', () => {
-      clearTimeout(this._joinTimer);
-      this._send({ t: 'hello', v: PROTOCOL, name: this._myName(), skin: this.profile.equipped });
-      this._status('Connected. Syncing…', 'ok');
-    });
-    conn.on('data', (msg) => this._onData(msg));
-    conn.on('close', () => this._onDisconnect());
-    conn.on('error', () => this._onDisconnect());
-  }
-
-  _onPeerError(err) {
-    if (this.state === 'joining' && err && err.type === 'peer-unavailable') {
-      this._fail(new Error(`Room ${this.code} doesn't exist (or the host closed it).`));
-    } else if (this.state !== 'match' && this.state !== 'over') {
-      this._fail(err);
-    }
+    await this._connect('join', code);
   }
 
   _fail(err) {
@@ -485,23 +432,23 @@ export class Duel {
   }
 
   _send(msg) {
-    if (this.conn && this.conn.open) { try { this.conn.send(msg); } catch (e) {} }
+    if (this.conn && this.conn.readyState === WebSocket.OPEN) {
+      try { this.conn.send(JSON.stringify({ op: 'data', payload: msg })); } catch (e) {}
+    }
   }
 
   leave(silent = false) {
     clearTimeout(this._joinTimer);
     clearTimeout(this._startTimer);
     if (this.conn) { try { this._send({ t: 'bye' }); } catch (e) {} }
-    const conn = this.conn, peer = this.peer;
-    this.conn = null; this.peer = null;
-    setTimeout(() => { try { conn && conn.close(); } catch (e) {} try { peer && peer.destroy(); } catch (e) {} }, 150);
-    const wasActive = this.active;
+    const conn = this.conn;
+    this.conn = null;
+    if (conn) try { conn.close(); } catch (e) {}
     this.state = 'idle';
     this.avatar.alive = false;
     this.avatar.mesh.visible = false;
     this._showHud(false);
     this.el.dead.classList.add('hidden');
-
     this.game.onPlayerDeath = null;
     this.code = null;
     if (!silent) this._status('');
@@ -511,7 +458,9 @@ export class Duel {
     if (!this.conn) return; // we left on purpose
     const wasMatch = this.state === 'match';
     const wasOver = this.state === 'over';
+    const oldConn = this.conn;
     this.conn = null;
+    try { oldConn?.close(); } catch (e) {}
     if (wasMatch) { this._end('disconnect'); return; }
     if (wasOver) { this.ui.el.goBest.textContent = 'RIVAL LEFT THE ROOM'; this.ui.el.restartBtn.disabled = true; return; }
     this.leave(true);
