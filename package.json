@@ -1,15 +1,20 @@
 {
-  "name": "shoot-clankers",
+  "name": "kettle-creek-repo",
   "version": "1.0.0",
-  "private": true,
-  "type": "module",
+  "description": "A short first-person horror story game that runs in the browser. October 2012: it's your first overnight shift alone at the Kettle Creek Gas & Go on Route 41, and your boss warned you about a grey Buick.",
+  "main": "index.js",
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "devDependencies": {
-    "vite": "^8.3.5"
+    "vite": "^8.3.7"
   },
   "dependencies": {
     "three": "^0.187.0"
