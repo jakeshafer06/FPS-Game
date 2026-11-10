@@ -108,6 +108,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hi
       </label>
     </div>
     <div class="keys"><kbd>W A S D</kbd> move &nbsp; <kbd>Shift</kbd> run &nbsp; <kbd>E</kbd> / click interact &nbsp; <kbd>F</kbd> flashlight<br><kbd>1</kbd><kbd>2</kbd> choose a reply &nbsp; <kbd>Space</kbd> skip line &nbsp; <kbd>Esc</kbd> pause · Headphones recommended</div>
+    <div class="keys" id="ver">Version 1.2</div>
     <div id="mobile">Needs a keyboard and mouse. Open this on a desktop computer.</div>
   </div>
 </section>
@@ -296,7 +297,7 @@ const M = {
   shelf: std({ color:0xd9d6cf, roughness:.5, metalness:.2 }),
   counter: std({ color:0x6b4a32, roughness:.7 }),
   counterTop: std({ color:0xbab4a6, roughness:.35, envMap:envTex, envMapIntensity:.3 }),
-  glass: new THREE.MeshPhysicalMaterial({ color:0x9fb0b8, roughness:.05, metalness:0, transparent:true, opacity:.16, envMap:envTex, envMapIntensity:.9, depthWrite:false }),
+  glass: new THREE.MeshPhysicalMaterial({ color:0xa9bcc6, roughness:.08, metalness:0, transparent:true, opacity:.3, envMap:envTex, envMapIntensity:1.6, depthWrite:false }),
   black: std({ color:0x0b0b0c, roughness:.6 }),
   red: std({ color:0xa21d15, roughness:.5 }),
   yellow: std({ color:0xd7a51c, roughness:.6 }),
@@ -368,6 +369,7 @@ wallBox(1,H-2.2,.2,7.5,2.2+(H-2.2)/2,-8,'nz',false); // back door lintel
 for(const [a,b] of [[-10,2],[3.6,10]]){ const w=b-a, cx=(a+b)/2; wallBox(w,.8,.2,cx,.4,8,'pz'); const g=box(w,1.8,.04,M.glass,cx,1.7,8,{collide:true}); g.renderOrder=2; }
 wallBox(20,.6,.2,0,2.9,8,'pz',false);
 for(const x of [-10,-6,-2,2,3.6,7,10]) box(.1,2.6,.14,M.darkMetal,x,1.3,8.02,{});
+for(const [a,b] of [[-10,2],[3.6,10]]) for(const y of [.82,1.75,2.58]) box(b-a,.06,.12,M.darkMetal,(a+b)/2,y,8.02,{});
 // roof & ceiling & floor
 box(20.6,.35,16.8,M.wallOut,0,H+.17,0.1,{cast:true});
 { const c=new THREE.Mesh(planeGeo(20,16,1.2),M.ceil); c.rotation.x=Math.PI/2; c.position.set(0,H-.01,0); scene.add(c);
@@ -843,7 +845,7 @@ function interact(){ if(current && state==='play' && !paused) iaUse(current); }
 addIA('backdoor',backDoor.panel,()=>backDoor.target>.3?'Close door':(backDoor.locked?'Unlock door':'Open door'),()=>{
   if(backDoor.target>.3){ backDoor.target=0; sfx.slam(); }
   else if(backDoor.locked){ backDoor.locked=false; sfx.click(); toast('Unlocked',1.5); }
-  else if(!backDoor.unstuck){ backDoor.unstuck=true; sfx.thud(.7); player.shake=.5; inner("It's stuck. Ray said to give it a shove."); }
+  else if(!backDoor.unstuck){ backDoor.unstuck=true; sfx.thud(.7); player.shake=.5; inner("It's stuck. Ray said to give it a shove."); toast('Press E again to shove the door',4); }
   else { backDoor.target=backDoor.openAngle; sfx.creak(); }
 });
 addIA('deadbolt',deadbolt,()=>backDoor.locked?'Unlock deadbolt':'Lock deadbolt',()=>{ backDoor.locked=!backDoor.locked; sfx.breaker(); },()=>backDoor.target<.2 && player.pos.z>-8);
@@ -867,11 +869,11 @@ async function story(){
   toast('WASD move · Shift run · E interact · F flashlight',6);
   await inner('First night on my own. Ray said the overnight is dead after ten.');
   await inner("Just me, the hum of the coolers, and Route 41.");
-  obj('clock','Clock in at the register');
+  obj('clock','Clock in at the register (on the counter by you)');
   await use('register','Clock in', ()=>inCashier());
   sfx.beep(); setClock('11:00 PM'); done('clock');
   await wait(2.5);
-  obj('phone','Answer the phone'); await phoneRing(phone,'Answer phone'); done('phone');
+  obj('phone','Answer the phone (on the wall behind the counter)'); await phoneRing(phone,'Answer phone'); done('phone');
   await say('Ray (phone)',"Hey Sam, it's Ray. You find everything okay?",{k:'m'});
   const c1=await choose(['Yeah, just clocked in.','It\'s pretty dead out here.']);
   await say('Ray (phone)', c1? "Ha. That's the job, kid. Dead is good." : "Good, good. Quiet night's a good night.",{k:'m'});
@@ -884,7 +886,7 @@ async function story(){
   await say('Ray (phone)',"Lock the back door when you're done back there. Night, Sam.",{k:'m'});
   sfx.click(); await inner('...What was that about?');
   setClock('11:06 PM');
-  obj('cooler','Restock the drinks cooler'); obj('trash','Take out the trash');
+  obj('cooler','Restock the cooler: get the blue crate from the back room (doorway right of the drink coolers)'); obj('trash','Take out the trash: grab the bag by the front door, take it out the back door to the dumpster');
   await Promise.all([taskCooler(), taskTrash()]);
   // back inside
   setClock('11:38 PM'); targetTension=.15;
@@ -895,7 +897,7 @@ async function story(){
   const arrive=carDrive([[-130,31.6],[-40,31.6],[-14,31.4],[-4,28],[1.6,23],[2.3,19],[2.3,17.2]],14);
   await until(()=>car.s>car.len*.55);
   setClock('11:47 PM'); await inner('Headlights.');
-  obj('counter','Get back behind the counter');
+  obj('counter','Get back behind the counter (the register)');
   await arrive; car.lights=false; car.engine=false; sfx.thud(.25);
   await inner("A grey sedan.");
   await inner("...Is that a Buick?",{d:3}); targetTension=.3;
@@ -925,7 +927,7 @@ async function story(){
   manHide(); sfx.thud(.3);
   setClock('12:10 AM'); targetTension=.35;
   await inner("He's just... sitting in his car.");
-  obj('ray','Call Ray');
+  obj('ray','Call Ray on the wall phone behind the counter');
   await use('phone','Call Ray',()=>inCashier());
   done('ray');
   for(let i=0;i<3;i++){ tone(440,1,{gain:.05}); tone(480,1,{gain:.05}); await wait(2.6); }
@@ -935,8 +937,8 @@ async function story(){
   sfx.click(); await inner("He's still out there. Engine off. Lights off.");
   await inner("Act normal. Keep busy.");
   // face shelves
-  obj('shelves','Face the shelves (0/3)'); let n=0;
-  await Promise.all(endcaps.map((e,i)=>use('shelf'+i,'Face the shelf').then(async()=>{ sfx.shelf(); n++; objText('shelves',`Face the shelves (${n}/3)`); if(n===1){ car.lights=true; await wait(.25); car.lights=false; await wait(.25); car.lights=true; await wait(.25); car.lights=false; await inner('Did he just flash his lights at me?'); } })));
+  obj('shelves','Face the shelves (0/3): the red end of each aisle, by the front windows'); let n=0;
+  await Promise.all(endcaps.map((e,i)=>use('shelf'+i,'Face the shelf').then(async()=>{ sfx.shelf(); n++; objText('shelves',`Face the shelves (${n}/3): the red end of each aisle, by the front windows`); if(n===1){ car.lights=true; await wait(.25); car.lights=false; await wait(.25); car.lights=true; await wait(.25); car.lights=false; await inner('Did he just flash his lights at me?'); } })));
   done('shelves'); setClock('1:31 AM');
   await wait(2); car.engine=true; car.lights=true; await inner('Engine.');
   await carDrive([[2.3,17.2],[2.6,12],[7.5,10.6],[13,13.5],[14.5,24],[22,31.4],[60,31.4],[160,31.4]],12);
@@ -954,7 +956,7 @@ async function story(){
   targetTension=.55;
   // back door is open again
   backDoor.locked=false; backDoor.target=.45; backDoor.unstuck=true;
-  obj('back','Check the back door');
+  obj('back','Check the back door (through the back room)');
   await until(()=>inBackroom());
   await inner("I locked this. I know I locked this.");
   objText('back','Lock the back door');
@@ -965,7 +967,7 @@ async function story(){
   sfx.dead(); setPower(false); player.shake=.6; targetTension=.75;
   await wait(1.5); await inner('No. No, no, no.');
   toast('Press F for your phone flashlight',6);
-  obj('breaker','Reset the breaker in the office');
+  obj('breaker','Reset the breaker: the grey box in the office, the door left of the drink coolers');
   // lightning reveal while crossing the store
   (async()=>{ await until(()=>player.pos.z>-2 && player.pos.x<6 && player.pos.x>-5.5); await wait(.8);
     manPlace(clamp(player.pos.x,-5,1.5),9.6,Math.PI); strike(.4); player.shake=.3; await wait(.5); lightning=1; await wait(.35); manHide(); await wait(.6); await inner('...Was someone at the window?'); })();
@@ -978,7 +980,7 @@ async function story(){
   setClock('2:04 AM'); targetTension=.85;
   man.mode='idle'; manPlace(-6.5,-2.2,Math.PI);
   const bangLoop={on:true}; (async()=>{ while(bangLoop.on){ sfx.bang(); officeDoor.shake=.05; player.shake=.25; await wait(.18); officeDoor.shake=0; await wait(1.1+Math.random()*1.2); } })();
-  obj('911','Call 911');
+  obj('911','Call 911 on the office desk phone');
   await use('officephone','Call 911'); done('911');
   await say('Dispatch',"911, what is the address of your emergency?",{k:'m'});
   await choose(['Kettle Creek Gas & Go, Route 41.','The gas station on 41, by the creek.']);
@@ -1012,6 +1014,7 @@ async function story(){
 
 async function taskCooler(){
   await use('crate','Pick up crate',()=>!player.carry); crate.visible=false; carryCrate.visible=true; player.carry='crate'; sfx.rustle();
+  objText('cooler','Restock the cooler: put the crate in the glowing drink coolers on the back wall');
   await use('cooler','Restock the cooler',()=>player.carry==='crate');
   carryCrate.visible=false; player.carry=null; sfx.glassClink();
   const d=new THREE.Object3D(); for(const b of coolerBottles){ d.position.set(b.x,b.y,b.z); d.scale.setScalar(1); d.updateMatrix(); bottleMesh.setMatrixAt(b.i,d.matrix); } bottleMesh.instanceMatrix.needsUpdate=true;
@@ -1019,6 +1022,7 @@ async function taskCooler(){
 }
 async function taskTrash(){
   await use('bag','Pick up trash bag',()=>!player.carry); bag.visible=false; carryBag.visible=true; player.carry='bag'; sfx.rustle();
+  objText('trash','Take out the trash: go through the back room, out the back door, to the green dumpster');
   await use('dumpster','Throw out the trash',()=>player.carry==='bag');
   carryBag.visible=false; player.carry=null; sfx.thud(.6); done('trash');
   targetTension=.15; await wait(1.4);
