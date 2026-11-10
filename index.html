@@ -117,6 +117,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hi
     <div class="btns">
       <button class="btn" id="resumeBtn">Resume</button>
       <label class="opt" for="sens">Mouse <input id="sens" type="range" min="0.3" max="2.5" step="0.1" value="1"></label>
+      <label class="opt" for="glowAmt">Glow <input id="glowAmt" type="range" min="0" max="0.8" step="0.02" value="0.28"></label>
       <label class="opt" for="quality2">Graphics
         <select id="quality2"><option value="high">High</option><option value="low">Low</option></select>
       </label>
@@ -174,7 +175,7 @@ scene.add(camera);
 const pmrem = new THREE.PMREMGenerator(renderer);
 const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-let quality = 'high';
+let quality = 'high', bloomStrength = 0.28;
 let composer, bloom, grade;
 function buildComposer(){
   const hi = quality === 'high';
@@ -186,7 +187,7 @@ function buildComposer(){
   composer.setPixelRatio(pr);
   composer.setSize(innerWidth, innerHeight);
   composer.addPass(new RenderPass(scene, camera));
-  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth/2, innerHeight/2), 0.62, 0.55, 0.82);
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth/2, innerHeight/2), bloomStrength, 0.35, 0.95);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
   grade = new ShaderPass(GradeShader);
@@ -319,9 +320,9 @@ function box(w,h,d,mat,x,y,z,o={}){
   if(o.ray) rayTargets.push(m);
   return m;
 }
-function wallBox(w,h,d,x,y,z,outFace){ // outFace: 'px','nx','pz','nz' gets exterior material
+function wallBox(w,h,d,x,y,z,outFace,solid=true){ // outFace: 'px','nx','pz','nz' gets exterior material
   const faces=['px','nx','py','ny','pz','nz'].map(f=> f===outFace? M.wallOut : M.wall);
-  return box(w,h,d,faces,x,y,z,{collide:true,uv:1.6,cast:true});
+  return box(w,h,d,faces,x,y,z,{collide:solid,uv:1.6,cast:true});
 }
 
 /* ============================== LIGHTS ============================== */
@@ -361,28 +362,28 @@ wallBox(.2,H,16.2,-10,H/2,0,'nx');            // left (with window cut below)
 wallBox(.2,H,16.2,10,H/2,0,'px');
 wallBox(17,H,.2,-1.5,H/2,-8,'nz');             // back: x -10..7
 wallBox(2,H,.2,9,H/2,-8,'nz');                 // back: x 8..10
-wallBox(1,H-2.2,.2,7.5,2.2+(H-2.2)/2,-8,'nz'); // back door lintel
+wallBox(1,H-2.2,.2,7.5,2.2+(H-2.2)/2,-8,'nz',false); // back door lintel
 // left wall office window is faked as a pane on top of the wall: sirens are seen through it
 // front: low wall + header + mullions + glass (door gap x 2..3.6)
 for(const [a,b] of [[-10,2],[3.6,10]]){ const w=b-a, cx=(a+b)/2; wallBox(w,.8,.2,cx,.4,8,'pz'); const g=box(w,1.8,.04,M.glass,cx,1.7,8,{collide:true}); g.renderOrder=2; }
-wallBox(20,.6,.2,0,2.9,8,'pz');
+wallBox(20,.6,.2,0,2.9,8,'pz',false);
 for(const x of [-10,-6,-2,2,3.6,7,10]) box(.1,2.6,.14,M.darkMetal,x,1.3,8.02,{});
 // roof & ceiling & floor
 box(20.6,.35,16.8,M.wallOut,0,H+.17,0.1,{cast:true});
 { const c=new THREE.Mesh(planeGeo(20,16,1.2),M.ceil); c.rotation.x=Math.PI/2; c.position.set(0,H-.01,0); scene.add(c);
   const f=new THREE.Mesh(planeGeo(20,16,1.2),M.floor); f.rotation.x=-Math.PI/2; f.position.set(0,.012,0); f.receiveShadow=true; scene.add(f); }
 // sign band
-{ const s=glow(T.sign,0xffffff,2.2); box(20.6,.9,.3,[M.wallOut,M.wallOut,M.wallOut,M.wallOut,s,M.wallOut],0,H+.5,8.2,{}); gridMat(s); }
+{ const s=glow(T.sign,0xffffff,1.5); box(20.6,.9,.3,[M.wallOut,M.wallOut,M.wallOut,M.wallOut,s,M.wallOut],0,H+.5,8.2,{}); gridMat(s); }
 // partition z=-3 (office door gap -7..-6, backroom gap 4..5)
 wallBox(3,H,.2,-8.5,H/2,-3); wallBox(10,H,.2,-1,H/2,-3); wallBox(5,H,.2,7.5,H/2,-3);
-wallBox(1,H-2.2,.2,-6.5,2.7,-3); wallBox(1,H-2.2,.2,4.5,2.7,-3);
+wallBox(1,H-2.2,.2,-6.5,2.7,-3,undefined,false); wallBox(1,H-2.2,.2,4.5,2.7,-3,undefined,false);
 wallBox(.2,H,5,-5,H/2,-5.5); wallBox(.2,H,5,3,H/2,-5.5);
 
 // ---- ceiling fluorescent panels
-const panelMat = gridMat(glow(null,0xf3f6ff,3.2));
+const panelMat = gridMat(glow(null,0xf3f6ff,1.7));
 for(const x of [-7.5,-3,1.5,6]) for(const z of [-.5,4.5]) box(1.2,.05,.6,panelMat,x,H-.03,z,{receive:false});
-const backPanel = glow(null,0xe8f0ff,3.0); gridMat(backPanel); box(1.2,.05,.4,backPanel,6.5,H-.03,-5.5,{receive:false});
-const officePanel = glow(null,0xfff1d6,2.4); gridMat(officePanel); box(.8,.05,.4,officePanel,-7.5,H-.03,-5.5,{receive:false});
+const backPanel = glow(null,0xe8f0ff,1.6); gridMat(backPanel); box(1.2,.05,.4,backPanel,6.5,H-.03,-5.5,{receive:false});
+const officePanel = glow(null,0xfff1d6,1.4); gridMat(officePanel); box(.8,.05,.4,officePanel,-7.5,H-.03,-5.5,{receive:false});
 
 // interior lights
 const Lmain = gridLight(spot(0xf2f4ff,0,new V3(0,H-.1,2),new V3(0,0,2.2),1.35,.9,16,true),38);
@@ -434,7 +435,7 @@ let bottleMesh;
 { const x0=-4.6, doors=7;
   box(7.4,.4,.8,M.darkMetal,-1,.2,-2.6,{collide:true});
   box(7.4,.6,.8,M.darkMetal,-1,2.75,-2.6,{});
-  const back=gridMat(glow(null,0xe9f3ff,1.6)); box(7.2,2.05,.02,back,-1,1.42,-2.96,{receive:false});
+  const back=gridMat(glow(null,0xe9f3ff,1.1)); box(7.2,2.05,.02,back,-1,1.42,-2.96,{receive:false});
   const items=[]; const cols=[0x7a0b0b,0xc41a1a,0x1d7c2a,0x1554b8,0xf07c00,0x9fd3ff,0x3b2412,0xf2e04a];
   for(let dI=0;dI<doors;dI++){ const cx=x0+.5+dI; box(.06,2.1,.06,M.metal,x0+dI,1.45,-2.24,{}); box(.03,.5,.04,M.metal,cx+.36,1.5,-2.19,{});
     for(let s=0;s<5;s++){ const y=.45+s*.43; box(.96,.02,.6,M.shelf,cx,y,-2.6,{}); const c=pick(cols); const missing=(dI>=4&&s<4);
@@ -462,8 +463,8 @@ const missingPoster = box(.36,.48,.012,std({map:T.missing,roughness:.8}),-.6,1.5
 box(.5,.7,.012,std({map:T.ad1,roughness:.8}),.2,1.6,7.88,{});
 box(.5,.7,.012,std({map:T.ad2,roughness:.8}),5.4,1.6,7.88,{});
 // OPEN sign & exit signs
-const openSign=gridMat(glow(T.open,0xffffff,3.2)); box(.9,.34,.03,openSign,-4,2.2,7.9,{}).rotation.y=Math.PI;
-const exitMat=glow(T.exit,0xffffff,2.6);
+const openSign=gridMat(glow(T.open,0xffffff,2.0)); box(.9,.34,.03,openSign,-4,2.2,7.9,{}).rotation.y=Math.PI;
+const exitMat=glow(T.exit,0xffffff,1.8);
 box(.5,.18,.06,exitMat,2.8,2.45,7.85,{}); box(.5,.18,.06,exitMat,4.5,2.4,-2.85,{});
 box(.5,.18,.06,exitMat,7.5,2.45,-7.85,{}).rotation.y=Math.PI;
 // security dome + trash can
@@ -524,7 +525,7 @@ const doors=[backDoor,officeDoor,frontDoor];
 const canopy = new THREE.Group(); scene.add(canopy);
 { const cm=[std({color:0xe8e4da,roughness:.6}),std({color:0xe8e4da}),M.white,std({color:0xd8d4ca,roughness:.8}),std({map:T.canopy,roughness:.5}),std({map:T.canopy,roughness:.5})];
   box(17,.7,9,cm,1,5.1,17,{cast:true,parent:canopy});
-  const pm=gridMat(glow(null,0xfff7ea,4.2));
+  const pm=gridMat(glow(null,0xfff7ea,2.2));
   for(const x of [-4.5,1,6.5]) for(const z of [14.5,19.5]) box(1.6,.04,1,pm,x,4.73,z,{receive:false,parent:canopy});
   for(const x of [-3.5,4.5]){ box(1.4,.18,4.6,std({color:0xa9a59b,roughness:.9}),x,.09,17,{collide:true}); for(const z of [15.2,18.8]) box(.3,4.7,.3,M.white,x,2.4,z,{cast:true,collide:true});
     for(const z of [16.2,17.8]){ const p=new THREE.Group(); p.position.set(x,.18,z); scene.add(p); box(.7,1.7,.5,std({color:0xe2ddd2,roughness:.4,envMap:envTex,envMapIntensity:.4}),0,.85,0,{parent:p,cast:true}); box(.72,.25,.52,M.red,0,1.6,0,{parent:p});
@@ -536,7 +537,7 @@ const Lcanopy = gridLight(spot(0xfff3e0,0,new V3(1,4.6,17),new V3(1,0,17.5),1.15
 const Lcanopy2= gridLight(point(0xfff1dd,0,new V3(1,4.2,11),18),40);
 const Lfacade = gridLight(point(0xffd2a8,0,new V3(0,4.2,10),16),18);
 // back wall pack (sodium)
-box(.35,.25,.25,M.darkMetal,7.5,2.75,-8.2,{}); const wp=gridMat(glow(null,0xffb35a,4)); box(.28,.05,.2,wp,7.5,2.62,-8.25,{});
+box(.35,.25,.25,M.darkMetal,7.5,2.75,-8.2,{}); const wp=gridMat(glow(null,0xffb35a,2.4)); box(.28,.05,.2,wp,7.5,2.62,-8.25,{});
 const Lwall = gridLight(spot(0xffa64d,0,new V3(7.5,2.6,-8.4),new V3(7,0,-11.5),1.1,.8,16,false),60);
 // side wall pack
 const Lside = gridLight(spot(0xffb060,0,new V3(10.3,2.8,2),new V3(13,0,3),1.1,.8,14,false),35);
@@ -786,7 +787,7 @@ function updateCar(dt){
   if(car.curve){ const rem=car.len-car.s; car.speed=Math.min(car.vmax,Math.max(1.2,rem*.55)); car.s+=car.speed*dt;
     if(car.s>=car.len){ car.s=car.len; const p=car.curve.getPointAt(1); car.g.position.copy(p); car.curve=null; const b=new THREE.Box3().setFromObject(car.g); Object.assign(car.col,{minX:b.min.x,maxX:b.max.x,minZ:b.min.z,maxZ:b.max.z,on:true}); const cb=car.onArrive; car.onArrive=null; cb&&cb(); }
     else { const u=car.s/car.len; const p=car.curve.getPointAt(u), tg=car.curve.getTangentAt(u); car.g.position.copy(p); car.g.rotation.y=Math.atan2(tg.x,tg.z); for(const w of car.wheels) w.rotation.x+=car.speed*dt/.33; } }
-  const L=car.lights?1:0; car.headMat.emissiveIntensity=lerp(car.headMat.emissiveIntensity,L*6,.2); car.tailMat.emissiveIntensity=lerp(car.tailMat.emissiveIntensity,L*3,.2); car.beam.intensity=lerp(car.beam.intensity,L*260,.2);
+  const L=car.lights?1:0; car.headMat.emissiveIntensity=lerp(car.headMat.emissiveIntensity,L*3.5,.2); car.tailMat.emissiveIntensity=lerp(car.tailMat.emissiveIntensity,L*3,.2); car.beam.intensity=lerp(car.beam.intensity,L*260,.2);
 }
 function updateDoors(dt){
   const near=(x,z)=>Math.hypot(player.pos.x-x,player.pos.z-z)<1.7||(man.g.visible&&Math.hypot(man.g.position.x-x,man.g.position.z-z)<1.7);
@@ -804,7 +805,7 @@ function updateLights(dt){
   if(grid.on && grid.flick>0){ gf = Math.random()<grid.flick*.5? Math.random()*.3 : 1; }
   for(const it of grid.items){ let f=gf; if(it.l===Lback||it.m===backPanel){ f*= (Math.sin(t*37)*Math.sin(t*3.1)>.92 || Math.random()<.015)? .15:1; }
     if(it.l) it.l.intensity=it.base*f; else it.m.emissiveIntensity=it.base*f; }
-  exitMat.emissiveIntensity=2.6;
+  exitMat.emissiveIntensity=1.8;
   lightning=Math.max(0,lightning-dt*2.4); const lf = lightning>0? (Math.sin(lightning*40)>0?lightning:lightning*.3):0;
   bolt.intensity=lf*6; skyU.uFlash.value=lf*.8; rainMat.uniforms.uCol.value.setRGB(.55+lf,.6+lf,.7+lf);
   if(sirens){ const ph=Math.floor(t*3)%2; sirenR.intensity=ph?260:320; sirenR.color.setHex(ph?0xff1010:0x1030ff); sirenF.intensity=(ph?1:.4)*120; sirenF.color.setHex(ph?0xff2020:0x2040ff); } else { sirenR.intensity=sirenF.intensity=0; }
@@ -1111,6 +1112,8 @@ try{ const s=localStorage.getItem('kc-sens'); if(s){ sens=+s; $('#sens').value=s
 const setQ=v=>{ quality=v; $('#quality').value=v; $('#quality2').value=v; buildComposer(); try{ localStorage.setItem('kc-q',v); }catch(_){} };
 $('#quality').onchange=e=>setQ(e.target.value); $('#quality2').onchange=e=>setQ(e.target.value);
 try{ const q=localStorage.getItem('kc-q'); if(q){ quality=q; $('#quality').value=q; $('#quality2').value=q; } }catch(_){}
+$('#glowAmt').oninput=e=>{ bloomStrength=+e.target.value; bloom.strength=bloomStrength; try{ localStorage.setItem('kc-glow',bloomStrength); }catch(_){} };
+try{ const gl=localStorage.getItem('kc-glow'); if(gl!==null){ bloomStrength=+gl; $('#glowAmt').value=gl; } }catch(_){}
 $('#againBtn').onclick=()=>location.reload();
 $('#startBtn').onclick=async()=>{
   initAudio(); AU.ctx.resume?.(); $('#title').hidden=true; lock();
@@ -1143,7 +1146,7 @@ function frame(){
   composer.render();
 }
 frame();
-window.__kc={ set dtMax(v){DTMAX=v}, set tscale(v){TSCALE=v}, backDoor, officeDoor, objectives, get skipv(){return skip}, set skipv(v){skip=v}, pickChoice, setState(v){state=v}, manPlace, lightUp:()=>{},  get state(){return state}, player, man, car, story, setPower, strike, IA, iaUse, cam:camera };
+window.__kc={ keys,  set dtMax(v){DTMAX=v}, set tscale(v){TSCALE=v}, backDoor, officeDoor, objectives, get skipv(){return skip}, set skipv(v){skip=v}, pickChoice, setState(v){state=v}, manPlace, lightUp:()=>{},  get state(){return state}, player, man, car, story, setPower, strike, IA, iaUse, cam:camera };
 </script>
 </body>
 </html>

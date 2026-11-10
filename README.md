@@ -6,13 +6,21 @@ A short first-person horror story game that runs in the browser. October 2012: i
 
 Open `index.html` in a desktop browser (Chrome, Edge, or Firefox). The page loads Three.js from the jsDelivr CDN and fonts from Google Fonts, so it needs an internet connection.
 
-Some browsers block JavaScript modules on pages opened straight from disk (`file://`). If the page stays black, serve the folder locally:
+Some browsers block JavaScript modules on pages opened straight from disk (`file://`). If the page stays black, run it with a local server instead. With [Node.js](https://nodejs.org) installed:
 
 ```bash
-python3 -m http.server 8000
+npm install
 ```
 
-Then open http://localhost:8000.
+```bash
+npm start
+```
+
+Then open http://localhost:3000.
+
+## Deploy to Netlify
+
+The included `netlify.toml` tells Netlify there is no build step and to publish the repository root. In Netlify choose **Add new site → Import an existing project → GitHub**, pick this repository, and click **Deploy**.
 
 ## Host it on GitHub Pages
 
@@ -32,7 +40,7 @@ Then open http://localhost:8000.
 | F | Phone flashlight |
 | 1, 2 | Choose a reply |
 | Space | Skip a line |
-| Esc | Pause (mouse sensitivity and graphics settings) |
+| Esc | Pause (mouse sensitivity, glow, and graphics settings) |
 
 Needs a keyboard and mouse. Headphones recommended.
 

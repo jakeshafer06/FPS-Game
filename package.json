@@ -1,22 +1,12 @@
 {
-  "name": "kettle-creek-repo",
+  "name": "kettle-creek",
   "version": "1.0.0",
-  "description": "A short first-person horror story game that runs in the browser. October 2012: it's your first overnight shift alone at the Kettle Creek Gas & Go on Route 41, and your boss warned you about a grey Buick.",
-  "main": "index.js",
+  "description": "A first-person horror story game that runs in the browser.",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vite --host",
-    "build": "vite build",
-    "preview": "vite preview"
+    "start": "serve . -l 3000"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
-    "vite": "^8.3.7"
-  },
-  "dependencies": {
-    "three": "^0.187.0"
+    "serve": "14.2.4"
   }
 }

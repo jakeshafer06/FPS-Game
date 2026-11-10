@@ -1,0 +1,4 @@
+# Kettle Creek is a static site: no build step, publish the repository root.
+[build]
+  publish = "."
+  command = ""
