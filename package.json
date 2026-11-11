@@ -1,9 +1,10 @@
 {
   "name": "kettle-creek",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "A first-person horror story game that runs in the browser.",
   "private": true,
   "scripts": {
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('index.html','dist/index.html');console.log('Copied index.html to dist/')\"",
     "start": "serve . -l 3000"
   },
   "devDependencies": {

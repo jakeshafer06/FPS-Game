@@ -1,4 +1,5 @@
-# Kettle Creek is a static site: no build step, publish the repository root.
+# Kettle Creek is a single HTML file. The build just copies it into dist/,
+# which matches the dist folder this Netlify site was originally set up to publish.
 [build]
-  publish = "."
-  command = ""
+  command = "npm run build"
+  publish = "dist"
