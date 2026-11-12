@@ -1099,12 +1099,12 @@ function initAudio(){
   const len=C.sampleRate*3, buf=C.createBuffer(1,len,C.sampleRate), d=buf.getChannelData(0); let b=0; for(let i=0;i<len;i++) d[i]=Math.random()*2-1; AU.noise=buf;
   const brown=C.createBuffer(1,len,C.sampleRate), bd=brown.getChannelData(0); for(let i=0;i<len;i++){ b=(b+.02*(Math.random()*2-1))/1.02; bd[i]=b*3.5; } AU.brown=brown;
   const loop=(buffer,type,f,q,gain)=>{ const s=C.createBufferSource(); s.buffer=buffer; s.loop=true; const fl=C.createBiquadFilter(); fl.type=type; fl.frequency.value=f; fl.Q.value=q; const g=C.createGain(); g.gain.value=gain; s.connect(fl).connect(g).connect(AU.master); s.start(); return {g,fl,s}; };
-  AU.rainBuf=makeRainBuffer(C,5); AU.rain=loop(AU.rainBuf,'lowpass',7000,.3,0); AU.rainHi=loop(AU.rainBuf,'highpass',3200,.3,0); AU.rumble=loop(AU.brown,'lowpass',180,.5,0);
+  const hush0=C.createBuffer(2,Math.floor(C.sampleRate*.25),C.sampleRate); AU.rain=loop(hush0,'lowpass',7000,.3,0); AU.rainHi=loop(hush0,'highpass',3200,.3,0); /* silent until rain.mp3 loads */ AU.rumble=loop(AU.brown,'lowpass',180,.5,0);
   // recorded rain (rain.mp3) replaces the synthesized bed once it loads; same filters, so it still goes muffled indoors
-  fetch('rain.mp3').then(r=>{ if(!r.ok) throw new Error('no rain.mp3'); return r.arrayBuffer(); }).then(b=>C.decodeAudioData(b)).then(buf=>{
-    const rb=seamless(C,buf,2), off=Math.random()*rb.duration;
-    for(const L of [AU.rain,AU.rainHi]){ try{ L.s.stop(); }catch(_){} const s=C.createBufferSource(); s.buffer=rb; s.loop=true; const boost=C.createGain(); boost.gain.value=3.2; s.connect(boost).connect(L.fl); s.start(0,off); L.s=s; }
-  }).catch(()=>{});
+  const setRain=(rb,boostV)=>{ const off=Math.random()*rb.duration;
+    for(const L of [AU.rain,AU.rainHi]){ try{ L.s.stop(); }catch(_){} const s=C.createBufferSource(); s.buffer=rb; s.loop=true; const boost=C.createGain(); boost.gain.value=boostV; s.connect(boost).connect(L.fl); s.start(0,off); L.s=s; } };
+  fetch('rain.mp3').then(r=>{ if(!r.ok) throw new Error('no rain.mp3'); return r.arrayBuffer(); }).then(b=>C.decodeAudioData(b)).then(buf=>setRain(seamless(C,buf,2),3.2))
+    .catch(e=>{ console.warn('rain.mp3 did not load, using synthesized rain:',e&&e.message); setRain(makeRainBuffer(C,5),1); });
   const osc=(type,f,gain,target=AU.master)=>{ const o=C.createOscillator(); o.type=type; o.frequency.value=f; const g=C.createGain(); g.gain.value=gain; o.connect(g).connect(target); o.start(); return {o,g}; };
   const humF=C.createBiquadFilter(); humF.type='lowpass'; humF.frequency.value=500; humF.connect(AU.master);
   AU.hum=osc('sawtooth',120,0,humF); AU.hum2=osc('sine',60,0);
@@ -2201,7 +2201,7 @@ function updateAudio(dt){
   const dRad=Math.hypot(player.pos.x+7.05,player.pos.z-6.55); const audible=radioOn&&grid.on&&player.inside&&state==='play'&&!W.silence;
   AU.radioOut.gain.setTargetAtTime(audible?clamp(1.15-dRad/13,0,1)*.55*S.radio*duck:0,now,.3);
   if(AU.song&&AU.song.src){ // real song: dips under the DJ, and the tape starts to drag and warble after 4 AM
-    AU.song.g.gain.setTargetAtTime(radioSpeak>0?.3:.8,now,.25);
+    AU.song.g.gain.setTargetAtTime(radioSpeak>0?.75:2.0,now,.25);
     AU.song.src.playbackRate.setTargetAtTime(hour>=5?.93+Math.sin(now*.9)*.03:hour>=4?.98+Math.sin(now*.7)*.02:1,now,.4);
   } else { if(RAD.next<now) RAD.next=now+.05; const rspb=hour>=5?.46:.3; while(RAD.next<now+.25){ radioStep(RAD.step++,RAD.next); RAD.next+=rspb; } }
   AU.voice.g.gain.setTargetAtTime(radioSpeak>0?(.2+Math.random()*.8)*.7:0,now,.03);
