@@ -1679,8 +1679,14 @@ addIA('poster',missingPoster,'Read poster',()=>{ inner(posterMat.map===T.missing
 // radio on the back counter
 const radio=new THREE.Group(); radio.position.set(-7.05,1.025,6.55); radio.rotation.y=Math.PI/2; scene.add(radio);
 { box(.34,.18,.12,std({color:0x2a2622,roughness:.5}),0,.09,0,{parent:radio,uv:0,cast:true}); mesh(new THREE.CircleGeometry(.055,20),std({color:0x111,roughness:.9}),-.09,.09,.061,{parent:radio}); box(.12,.05,.005,glow(null,0xffb35a,.6),.07,.12,.061,{parent:radio,uv:0}); mesh(new THREE.CylinderGeometry(.004,.004,.4,6),M.steel,.14,.36,-.03,{parent:radio,rz:-.3}); }
-let radioOn=true;
-addIA('radio',radio,()=>radioOn?'Turn the radio off':'Turn the radio on',()=>{ radioOn=!radioOn; sfx.click(); });
+let radioOn=true, headphones=false;
+// headphones: the song plays clean, like background music, everywhere you go (still dies with the power and goes quiet when everything goes still)
+addIA('radio',radio,()=>headphones?'Radio · take off the headphones':(radioOn?'Radio · turn off or put on headphones':'Turn the radio on'),async()=>{
+  if(headphones){ headphones=false; sfx.click(); cap('*headphones off*'); return; }
+  if(!radioOn){ radioOn=true; sfx.click(); return; }
+  const hasSong=!!(AU.song&&AU.song.src); const c=await choose(hasSong?['Put on headphones','Turn the radio off','Never mind']:['Turn the radio off','Never mind']);
+  if(hasSong&&c===0){ headphones=true; sfx.click(); cap('*headphones on*'); toast('Headphones on. You can still hear the store, just less of it.',3); }
+  else if((hasSong&&c===1)||(!hasSong&&c===0)){ radioOn=false; sfx.click(); } },()=>state==='play'&&!busy&&!logging&&!choiceCb);
 function openNote(){ noteOpen=true; UI.note.hidden=false; sfx.rustle(); }
 function closeNote(){ if(!noteOpen) return; noteOpen=false; UI.note.hidden=true; $('#evid').hidden=true; sfx.rustle(); }
 
@@ -1732,11 +1738,11 @@ const RADIO_LINES=[
 let radioT=4, radioI=0, radioSpeak=0, radioLine='';
 function updateRadio(dt){
   const dist=Math.hypot(player.pos.x+7.05,player.pos.z-6.55);
-  const audible=radioOn&&grid.on&&player.inside&&!W.silence&&state==='play';
+  const audible=radioOn&&grid.on&&(player.inside||headphones)&&!W.silence&&state==='play';
   if(state!=='play'){ $('#radio').classList.remove('on'); return; }
   radioT-=dt; radioSpeak=Math.max(0,radioSpeak-dt);
   if(radioT<=0){ radioT=16+Math.random()*10; const L=RADIO_LINES[Math.min(hour,5)]; radioLine=(night>=3&&Math.random()<.2)?rpick(CARLA_RADIO):L[radioI++%L.length]; radioSpeak=Math.min(7,2.2+radioLine.length*.06); }
-  const show=audible&&radioSpeak>0&&dist<24; const el=$('#radio');
+  const show=audible&&radioSpeak>0&&(dist<24||headphones); const el=$('#radio');
   if(show&&el.dataset.line!==radioLine){ el.dataset.line=radioLine; el.innerHTML='<b>RADIO · WKCR 98.1</b>'; el.append(radioLine); }
   el.classList.toggle('on',show);
 }
@@ -2188,8 +2194,8 @@ function updateAudio(dt){
   AU.master.gain.setTargetAtTime(S.vol,now,.1);
   hushT=Math.max(0,hushT-dt); const duck=(W.silence||hushT>0)?0:1;
   const nearOpen=(Math.hypot(player.pos.x-7.5,player.pos.z+8)<4&&backDoor.angle>.3)||(Math.hypot(player.pos.x-2.8,player.pos.z-8)<5);
-  const rv=(state==='title'?.75:out?.8:nearOpen?.5:.42)*duck;
-  AU.rain.g.gain.setTargetAtTime(rv,now,.3); AU.rainHi.g.gain.setTargetAtTime((out||state==='title'?.35:nearOpen?.12:.02)*duck,now,.3); AU.rain.fl.frequency.setTargetAtTime(out||state==='title'?7000:nearOpen?2200:650,now,.3);
+  const hpd=headphones&&radioOn&&grid.on&&state==='play'?.55:1; const rv=(state==='title'?.75:out?.8:nearOpen?.5:.42)*duck*hpd;
+  AU.rain.g.gain.setTargetAtTime(rv,now,.3); AU.rainHi.g.gain.setTargetAtTime((out||state==='title'?.35:nearOpen?.12:.02)*duck*hpd*hpd,now,.3); AU.rain.fl.frequency.setTargetAtTime((out||state==='title'?7000:nearOpen?2200:650)*(hpd<1?.45:1),now,.3); // headphones: rain quieter and duller
   AU.rumble.g.gain.setTargetAtTime((.22+lightning*.6)*duck,now,.1);
   const hum=grid.on&&player.inside&&state!=='title'?.024*duck:0; AU.hum.g.gain.setTargetAtTime(hum,now,.05); AU.hum2.g.gain.setTargetAtTime(hum*.7,now,.05);
   const dv=(tension*.09+(state==='play'?.012+hour*.004:0))*duck; AU.drone1.g.gain.setTargetAtTime(dv,now,.8); AU.drone2.g.gain.setTargetAtTime(dv,now,.8); AU.drone3.g.gain.setTargetAtTime(dv*1.3,now,.8);
@@ -2199,10 +2205,11 @@ function updateAudio(dt){
   const dBuzz=Math.hypot(player.pos.x-BUZZ.x,player.pos.z-BUZZ.z); AU.buzz.g.gain.setTargetAtTime(grid.on&&state!=='title'?clamp(1-dBuzz/5,0,1)*.02*duck*(Math.random()<.2?.2:1):0,now,.03);
   // radio: a small-speaker oldies loop and a mumbling DJ while a caption is up
   const dRad=Math.hypot(player.pos.x+7.05,player.pos.z-6.55); const audible=radioOn&&grid.on&&player.inside&&state==='play'&&!W.silence;
-  AU.radioOut.gain.setTargetAtTime(audible?clamp(1.15-dRad/13,0,1)*.55*S.radio*duck:0,now,.3);
+  AU.radioOut.gain.setTargetAtTime(audible&&!headphones?clamp(1.15-dRad/13,0,1)*.55*S.radio*duck:0,now,.3);
+  const hpOn=headphones&&radioOn&&grid.on&&state==='play'&&!W.silence; if(AU.song) AU.song.hp.gain.setTargetAtTime(hpOn?.5*S.radio*duck:0,now,.3); // headphones: the mp3 as-is, steady volume
   if(AU.song&&AU.song.src){ // real song: dips under the DJ, and the tape starts to drag and warble after 4 AM
     AU.song.g.gain.setTargetAtTime(radioSpeak>0?.75:2.0,now,.25);
-    AU.song.src.playbackRate.setTargetAtTime(hour>=5?.93+Math.sin(now*.9)*.03:hour>=4?.98+Math.sin(now*.7)*.02:1,now,.4);
+    AU.song.src.playbackRate.setTargetAtTime(headphones?1:hour>=5?.93+Math.sin(now*.9)*.03:hour>=4?.98+Math.sin(now*.7)*.02:1,now,.4);
   } else { if(RAD.next<now) RAD.next=now+.05; const rspb=hour>=5?.46:.3; while(RAD.next<now+.25){ radioStep(RAD.step++,RAD.next); RAD.next+=rspb; } }
   AU.voice.g.gain.setTargetAtTime(radioSpeak>0?(.2+Math.random()*.8)*.7:0,now,.03);
   const td=Math.abs(truck.x-player.pos.x)+Math.abs(truck.g.position.z-player.pos.z); AU.truck.g.gain.setTargetAtTime(truck.on?clamp(1-td/90,0,1)*.15*duck:0,now,.2); AU.truck.o.frequency.setTargetAtTime(48+(truck.on?Math.sign(player.pos.x-truck.x)*truck.dir*5:0),now,.3);
@@ -2215,7 +2222,7 @@ function initAmbience(){
   // radio bus: everything goes through a narrow band-pass so it sounds like a cheap speaker
   AU.radioIn=C.createGain(); const bp=C.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=1300; bp.Q.value=.7; AU.radioOut=C.createGain(); AU.radioOut.gain.value=0; AU.radioIn.connect(bp).connect(AU.radioOut).connect(AU.master);
   // the station's song: radio.mp3, looped forever through the same cheap-speaker filter (falls back to the synth tune if it can't load)
-  AU.song={g:C.createGain(),buf:null,src:null}; AU.song.g.gain.value=0; AU.song.g.connect(AU.radioIn);
+  AU.song={g:C.createGain(),hp:C.createGain(),buf:null,src:null}; AU.song.g.gain.value=0; AU.song.g.connect(AU.radioIn); AU.song.hp.gain.value=0; AU.song.hp.connect(AU.master);
   fetch('radio.mp3').then(r=>{ if(!r.ok) throw new Error('no radio.mp3'); return r.arrayBuffer(); }).then(b=>C.decodeAudioData(b)).then(buf=>{ AU.song.buf=buf; restartSong(); }).catch(()=>{});
   const vs=C.createBufferSource(); vs.buffer=AU.noise; vs.loop=true; const vf=C.createBiquadFilter(); vf.type='bandpass'; vf.frequency.value=750; vf.Q.value=3; const vg=C.createGain(); vg.gain.value=0; vs.connect(vf).connect(vg).connect(AU.radioIn); vs.start(); AU.voice={g:vg};
   // horror music bus
@@ -2225,7 +2232,7 @@ function initAmbience(){
 const RAD={next:0,step:0};
 // (re)start the looping song at a random point, so each night picks up mid-song
 function restartSong(){ const S2=AU.song; if(!S2||!S2.buf) return; try{ S2.src&&S2.src.stop(); }catch(_){}
-  const s=AU.ctx.createBufferSource(); s.buffer=S2.buf; s.loop=true; s.connect(S2.g); s.start(0,Math.random()*S2.buf.duration); S2.src=s; }
+  const s=AU.ctx.createBufferSource(); s.buffer=S2.buf; s.loop=true; s.connect(S2.g); s.connect(S2.hp); s.start(0,Math.random()*S2.buf.duration); S2.src=s; }
 const RMEL=[[392,330,262,330],[440,349,294,349],[392,330,247,294],[349,294,262,220]];
 function radioStep(i,t){
   const C=AU.ctx, ch=RMEL[Math.floor(i/8)%4], warp=hour>=4?1+Math.sin(i*1.7)*.035:1, soft=radioSpeak>0?.35:1;
