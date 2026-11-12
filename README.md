@@ -3,7 +3,7 @@
 An endless first-person night-shift horror game that runs in the browser. It's October 2012 and you work the overnight shift at the Kettle Creek Gas & Go on Route 41. Every night is harder than the last. You have one life.
 
 - **Before each shift:** do your chores (restock, trash, mop, coffee, ice machine, generator), then clock in.
-- **During the shift:** serve customers, spot the fakes, and log every hour (ALL CLEAR, or REPORT and say where).
+- **During the shift:** serve customers, spot the fakes, and log every hour in the office logbook (ALL CLEAR, or REPORT and say where).
 - **Keep the store running:** feed the generator, swap flashlight batteries, answer the phone, shut off fuel spills, watch the security cameras, and lock the doors.
 - **Survive:** something stalks the store. It peeks from the dark, creeps closer on the cameras, and sometimes hunts you. Crouch behind the shelves or hide in the office. If it catches you, the run is over.
 - **Fear:** darkness and scares raise your fear. High fear brings hallucinations. Coffee helps.
@@ -12,6 +12,15 @@ An endless first-person night-shift horror game that runs in the browser. It's O
 - **The story:** find a note each night to learn what happened to Carla Wren.
 - **Leave the anomalies alone:** touch something that's wrong too many times and it notices. You'll get a hunt, a hiding event, or a strike.
 - **Sound captions:** every important sound pops up as text, like *brrrring* for the phone, with an arrow showing which way it came from. Turn them off in Settings → Audio.
+
+## What's new in 5.2
+
+- **The logbook is in the office now.** When you log the hour, the office door slams shut and the lights cut out. Whatever changed, you find out when you open the door.
+- **Three new store-wide anomalies**, reportable from anywhere:
+  - **The cave:** rock walls, stalactites, dripping water, and the doors are sealed with stone.
+  - **The ruin:** the store looks abandoned for years. Boarded windows, dead lights, stock all over the floor, graffiti on the walls.
+  - **Somewhere else:** outside the windows there's nothing but a red glow, and something enormous on the horizon.
+- **Seven small ones:** a mannequin that turns its head when you look away, bloody handprints inside the cooler glass, your missing poster all over the windows, the security monitor showing you from behind with something standing right behind you, a body bag that moves, LOOK BEHIND YOU written in the cooler fog, and a pair of shoes pointing at you.
 
 ## What's new in 5.1
 
