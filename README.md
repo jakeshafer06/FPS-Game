@@ -2,9 +2,13 @@
 
 A first-person night-shift anomaly game that runs in the browser. It's October 2012 and you're working the overnight shift alone at the Kettle Creek Gas & Go on Route 41. The owner left you a sheet of rules.
 
-Every hour, walk the store and decide whether anything has changed. Log the hour at the register as **ALL CLEAR** or **REPORT**. One wrong call and the night starts over at 12:00 AM. Make it to 6:00 AM to win.
+- **Serve customers.** Ring up what they bring, fetch what they ask for (cigarettes, coffee, hot dogs, pump prepay), and count out their change.
+- **Spot fake customers.** Some customers aren't people. Learn the tells and refuse service.
+- **Log every hour.** Walk the store and decide if anything has changed. Log ALL CLEAR, or REPORT and say where. You have until :59.
+- **Follow the rules.** Lights out? Hide in the office. Everything quiet? Don't move. Don't open the back door when someone knocks.
+- **Three strikes** and you're sent home and the night starts over. Make it to 6:00 AM.
 
-There are 28 anomalies, from subtle (a clock running backwards) to dangerous (something in the aisle that moves when you look away). Anomalies you find are remembered between nights.
+There are 40 anomalies, from subtle (a missing bottle, the wrong date on a calendar) to dangerous. Anomalies you find are remembered between nights.
 
 ## Play
 
@@ -40,10 +44,10 @@ The included `netlify.toml` tells Netlify there is no build step and to publish 
 | W A S D | Move |
 | Shift | Run |
 | Mouse | Look |
-| E / click | Interact |
+| E / click | Interact (register, logbook, doors, shelves) |
 | F | Phone flashlight |
 | R | Read Ray's rules |
-| 1, 2, 3 | Choose an option |
+| 1 to 7 | Choose an option |
 | Space | Skip a line |
 | Esc | Pause (mouse sensitivity, glow, and graphics settings) |
 

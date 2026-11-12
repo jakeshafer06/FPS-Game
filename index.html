@@ -85,6 +85,33 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hi
 #end{background:#000;justify-content:center}
 #end h2{margin:0;font:700 clamp(40px,7vw,84px)/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
 #end p{font:15px/1.6 var(--f-type);color:#cfc8b6;margin:14px 0 28px}
+#pay{margin-top:8px;font:500 15px/1 var(--f-mono);letter-spacing:.06em;font-variant-numeric:tabular-nums}
+#pay i{font-style:normal;display:inline-block;width:12px;height:12px;margin-left:5px;border:1px solid rgba(236,230,214,.5);vertical-align:-1px}
+#pay i.on{background:var(--blood);border-color:var(--blood)}
+#clock b.late{color:#ff8a7a}
+#radio{position:absolute;left:max(24px,env(safe-area-inset-left,0px));bottom:calc(46px + env(safe-area-inset-bottom,0px));max-width:min(420px,70vw);font:italic 13px/1.45 var(--f-type);color:#b9c4a8;opacity:0;transition:opacity .8s;text-shadow:0 1px 4px #000}
+#radio.on{opacity:1}
+#radio b{font:600 10px var(--f-mono);letter-spacing:.2em;color:var(--amber);font-style:normal;display:block;margin-bottom:2px}
+#hold{position:absolute;left:50%;bottom:calc(4vh + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:12px;letter-spacing:.1em;color:var(--amber);text-shadow:0 1px 4px #000;white-space:nowrap}
+#reg{z-index:27;display:grid;place-items:center;background:rgba(0,0,0,.45);pointer-events:auto}
+#reg .pos{width:min(760px,calc(100% - 32px));max-height:calc(100% - 40px);overflow:auto;box-sizing:border-box;background:#0d1b2e;border:2px solid #29476e;box-shadow:0 30px 80px rgba(0,0,0,.6);font:13px/1.45 var(--f-mono);color:#dfe8f2}
+#reg header{display:flex;justify-content:space-between;padding:8px 14px;background:#1d5fa8;font-weight:600;letter-spacing:.1em;font-size:11px}
+#reg .say{margin:0;padding:12px 16px;background:#0a1422;border-bottom:1px solid #22385a;font:15px/1.5 var(--f-type);color:#f1ead8}
+#reg .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;padding:14px 16px}
+#reg h5{margin:0 0 6px;font:600 10px var(--f-mono);letter-spacing:.24em;color:#7fa6d4;text-transform:uppercase}
+#reg ul{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:5px}
+#reg li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:6px 8px;background:#12243c;border:1px solid #1f3a5e;min-width:0}
+#reg li span{min-width:0;flex:1 1 140px;overflow-wrap:anywhere}
+#reg li.ok{border-color:#2f8a4a;color:#9fe0b0}
+#reg button{all:unset;cursor:pointer;padding:5px 10px;border:1px solid #4c7cb8;background:#173356;font:600 11px var(--f-mono);letter-spacing:.06em;white-space:nowrap}
+#reg button:hover,#reg button:focus-visible{background:#2a5a96}
+#reg button:disabled{opacity:.35;cursor:default}
+#reg .big{display:flex;justify-content:space-between;padding:4px 0;font-size:14px;font-variant-numeric:tabular-nums}
+#reg .big b{color:#5dffa8}
+#reg .coins{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+#reg footer{display:flex;flex-wrap:wrap;gap:10px;padding:12px 16px;border-top:1px solid #22385a;background:#0a1422}
+#reg footer .go{border-color:#2f8a4a;background:#173d27}
+#reg footer .no{border-color:#a8433a;background:#3d1a17;margin-left:auto}
 #mobile{display:none;margin-top:18px;font-size:12px;color:#ff8a7a;letter-spacing:.08em}
 @media (hover:none) and (pointer:coarse){#mobile{display:block}}
 @media (prefers-reduced-motion:reduce){#rec i{animation:none}}
@@ -98,26 +125,50 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hi
   <div id="cross"></div>
   <div id="prompt"><kbd>E</kbd><span></span></div>
   <div id="obj"><h4>Overnight</h4><ul></ul></div>
-  <div id="clock"><b>12:00 AM</b><span>SAT · OCT 13 · 2012</span><div class="pips"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  <div id="clock"><b>12:00 AM</b><span>SAT · OCT 13 · 2012</span><div class="pips"><i></i><i></i><i></i><i></i><i></i><i></i></div><div id="pay">$0.00 <i></i><i></i><i></i></div></div>
   <div id="toast"></div>
   <div id="subs"><span class="who"></span><span class="t"></span></div>
   <div id="choices"></div>
   <div id="rec"><i></i>KETTLE CREEK GAS &amp; GO · RT 41</div>
+  <div id="radio"></div>
+  <div id="hold"></div>
 </div>
 <div id="cards" class="layer"></div>
 <div id="fade" class="layer"></div>
+<div id="reg" class="layer" hidden>
+  <div class="pos">
+    <header><span>KCGG POS · REGISTER 1</span><span id="regClock"></span></header>
+    <p class="say" id="regSay"></p>
+    <div class="cols">
+      <div><h5>Items on the counter</h5><ul id="regItems"></ul><h5>They asked for</h5><ul id="regReq"></ul></div>
+      <div>
+        <div class="big"><span>TOTAL</span><b id="regTotal">$0.00</b></div>
+        <div class="big"><span>PAID</span><b id="regPaid">-</b></div>
+        <div class="big"><span>CHANGE DUE</span><b id="regDue">-</b></div>
+        <h5 style="margin-top:12px">Count out change</h5>
+        <div class="coins" id="regCoins"></div>
+        <div class="big"><span>YOU'RE GIVING</span><b id="regGive">$0.00</b></div>
+      </div>
+    </div>
+    <footer><button class="go" id="regDone">Complete sale</button><button id="regAway">Step away (go get it)</button><button class="no" id="regRefuse">Refuse service</button></footer>
+  </div>
+</div>
 <div id="note" class="layer" hidden>
   <div class="paper">
     <h3>Overnight rules. Read these every night.</h3>
     <p class="sub">Kettle Creek Gas &amp; Go · Rt 41</p>
     <ol>
-      <li>Every hour, log the store at the register: ALL CLEAR or REPORT.</li>
-      <li>Before you log, walk the whole store. Aisles, coolers, the back room, the office. Look out at the lot.</li>
-      <li>If anything is different from how it should be, REPORT it. If nothing is different, log ALL CLEAR.</li>
-      <li>If you get it wrong, the night starts over at 12. Don't ask me how. Just start over.</li>
-      <li>If someone is standing in the store who didn't come in the front door, do not look away from him. Walk backwards to the register if you have to.</li>
-      <li>Do not open the back door if someone is knocking on it. Nobody who knocks back there works here.</li>
-      <li>Day shift comes at 6:00 AM. Make it to 6.</li>
+      <li>Every hour, log the store in the logbook by the register before the hour runs out. ALL CLEAR if nothing is different. REPORT if something is, and say where.</li>
+      <li>Walk the whole store before you log. Aisles, coolers, coffee, the back room, the office. Look out at the lot.</li>
+      <li>A wrong log, a missed hour, or a broken rule is a strike. Three strikes and you're done for the night.</li>
+      <li>Serve every customer. Ring up what they bring, get them what they ask for, and count their change right.</li>
+      <li>Real customers come in the front door. The door opens and the bell rings. It's raining all night, so they'll be wet. We only sell what's on the shelves. Nobody comes in twice in one night.</li>
+      <li>If a customer is wrong, refuse service. Don't ring it up.</li>
+      <li>If someone is standing in the store who didn't come in the front door, don't look away from him.</li>
+      <li>Don't open the back door if someone is knocking.</li>
+      <li>If the lights go out, get in the office and shut the door. Stay there until they come back on.</li>
+      <li>If everything goes quiet, don't move until the sound comes back.</li>
+      <li>Don't stay outside long. If the back room light is out, don't stay back there long.</li>
     </ol>
     <p class="sig">Ray</p>
     <p class="close">E / R to close</p>
@@ -127,15 +178,15 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);overflow:hi
 <section id="title" class="screen">
   <div class="inner">
     <h1><span>Route 41 · 2012</span>Kettle Creek</h1>
-    <p class="tag">A night-shift anomaly game. Learn the store. Every hour, decide if anything has changed. One wrong call and the night starts over.</p>
+    <p class="tag">A night-shift anomaly game. Serve the customers. Learn the store. Every hour, decide if anything has changed, and where. Three strikes and you're done.</p>
     <div class="btns">
       <button class="btn" id="startBtn">Begin shift</button>
       <label class="opt" for="quality">Graphics
         <select id="quality"><option value="high">High</option><option value="low">Low</option></select>
       </label>
     </div>
-    <div class="keys"><kbd>W A S D</kbd> move &nbsp; <kbd>Shift</kbd> run &nbsp; <kbd>E</kbd> / click interact &nbsp; <kbd>F</kbd> flashlight &nbsp; <kbd>R</kbd> rules<br><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> choose &nbsp; <kbd>Space</kbd> skip &nbsp; <kbd>Esc</kbd> pause · Headphones recommended</div>
-    <div class="keys" id="ver">Version 2.0 · Anomalies found: <span id="foundTitle">0</span></div>
+    <div class="keys"><kbd>W A S D</kbd> move &nbsp; <kbd>Shift</kbd> run &nbsp; <kbd>E</kbd> / click interact &nbsp; <kbd>F</kbd> flashlight &nbsp; <kbd>R</kbd> rules<br><kbd>1</kbd>–<kbd>7</kbd> choose &nbsp; <kbd>Space</kbd> skip &nbsp; <kbd>Esc</kbd> pause · Headphones recommended</div>
+    <div class="keys" id="ver">Version 3.0 · Anomalies found: <span id="foundTitle">0</span></div>
     <div id="mobile">Needs a keyboard and mouse. Open this on a desktop computer.</div>
   </div>
 </section>
@@ -198,7 +249,7 @@ renderer.toneMappingExposure = .95;
 const scene = new THREE.Scene();
 const FOG = new THREE.Color(0x0a0e15);
 scene.background = FOG.clone();
-scene.fog = new THREE.FogExp2(FOG.clone(), 0.03);
+scene.fog = new THREE.FogExp2(FOG.clone(), 0.038);
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.03, 260);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
@@ -223,6 +274,7 @@ const GradeShader = {
       float l=dot(c,vec3(.299,.587,.114));
       c=mix(c, c*vec3(.88,.98,1.1), (1.-smoothstep(0.,.45,l))*.75);
       c=mix(c, c*vec3(1.05,1.0,.92), smoothstep(.4,1.,l)*.5);
+      c*=vec3(.96,1.02,.9); c=mix(c,c*c*1.25,.18);
       c=mix(vec3(l),c,.92-.25*uFear);
       c+= (h(vUv*vec2(1731.,977.)+fract(uTime*7.3))-.5)*uGrain*(1.+uFear);
       c*= 1.-smoothstep(.2,.9,r*2.2)*(.55+.25*uFear);
@@ -446,6 +498,9 @@ T.foot = (()=>{ const [c,g]=cv(64,128); g.fillStyle='rgba(10,8,6,.85)'; g.beginP
 T.tobacco = textTex(512,64,(g,w,h)=>{ g.fillStyle='#111'; g.fillRect(0,0,w,h); txt(g,'TOBACCO · WE CARD · UNDER 27? ID REQUIRED',w/2,h/2,{size:22,color:'#ffd21a',font:'"Archivo Black", Impact'}); });
 T.cold = textTex(1024,96,(g,w,h)=>{ vgrad(g,w,h,'#0b3f86','#06244d'); txt(g,'ICE COLD DRINKS',w*.5,h/2,{size:58,color:'#fff',font:'Oswald, Impact',weight:700}); g.fillStyle='#7cc4ff'; g.fillRect(0,h-6,w,6); });
 T.hours = textTex(256,256,(g,w,h)=>{ g.clearRect(0,0,w,h); txt(g,'OPEN',w/2,70,{size:40,color:'#fff',font:'Oswald, Impact',weight:700}); txt(g,'24',w/2,140,{size:90,color:'#fff',font:'Oswald, Impact',weight:700}); txt(g,'HOURS',w/2,205,{size:40,color:'#fff',font:'Oswald, Impact',weight:700}); });
+T.coldRed = textTex(1024,96,(g,w,h)=>{ vgrad(g,w,h,'#861010','#4d0606'); txt(g,'ICE COLD DRINKS',w*.5,h/2,{size:58,color:'#fff',font:'Oswald, Impact',weight:700}); g.fillStyle='#ff8a7a'; g.fillRect(0,h-6,w,6); });
+T.cal87 = textTex(160,220,(g,w,h)=>{ g.fillStyle='#f4f0e6'; g.fillRect(0,0,w,h); g.fillStyle='#284d2a'; g.fillRect(0,0,w,90); txt(g,'OCTOBER 1987',w/2,120,{size:20,color:'#222',font:'Oswald, Impact',weight:700}); g.fillStyle='#333'; g.font='11px monospace'; for(let i=0;i<31;i++) g.fillText(i+1,14+(i%7)*20,145+Math.floor(i/7)*16); });
+T.atmOff = textTex(64,48,(g,w,h)=>{ g.fillStyle='#000'; g.fillRect(0,0,w,h); });
 T.wecard = textTex(256,128,(g,w,h)=>{ g.fillStyle='#fff'; g.fillRect(0,0,w,h); g.fillStyle='#b5221a'; g.fillRect(6,6,w-12,h-12); txt(g,'WE CARD',w/2,52,{size:42,color:'#fff'}); txt(g,'UNDER 27? ASK FOR ID',w/2,96,{size:16,color:'#fff',font:'"IBM Plex Mono", monospace',weight:600}); });
 
 /* ============================== MATERIALS ============================== */
@@ -595,17 +650,18 @@ wallBox(1,H-2.2,.2,-6.5,2.7,-3,undefined,false); wallBox(1,H-2.2,.2,4.5,2.7,-3,u
 wallBox(.2,H,5,-5,H/2,-5.5); wallBox(.2,H,5,3,H/2,-5.5);
 
 // troffers (2x4 fluorescent, louvered)
-const panelMat = gridMat(glow(T.troffer,0xf3f6ff,1.7));
-const panelRed = glow(T.troffer,0xf3f6ff,1.7); gridMat(panelRed);
+const panelMat = gridMat(glow(T.troffer,0xe6f4d8,1.45));
+const panelRed = glow(T.troffer,0xe6f4d8,1.45); gridMat(panelRed);
+const deadPanel = glow(T.troffer,0xe6f4d8,.03); const buzzPanel = glow(T.troffer,0xe6f4d8,1.45); gridMat(buzzPanel);
 const troffers=[];
-for(const x of [-7.5,-3,1.5,6]) for(const z of [-.5,4.5]){ const red = (x===1.5&&z===-.5); box(1.24,.06,.64,M.white,x,H-.02,z,{uv:0,receive:false}); troffers.push(box(1.18,.02,.58,red?panelRed:panelMat,x,H-.055,z,{uv:0,receive:false})); }
-const backPanel = glow(T.troffer,0xe8f0ff,1.6); gridMat(backPanel); box(1.24,.06,.64,M.white,6.5,H-.02,-5.5,{uv:0}); box(1.18,.02,.58,backPanel,6.5,H-.055,-5.5,{uv:0});
+for(const x of [-7.5,-3,1.5,6]) for(const z of [-.5,4.5]){ const red = (x===1.5&&z===-.5), dead=(x===-3&&z===4.5), buzz=(x===6&&z===-.5); box(1.24,.06,.64,M.white,x,H-.02,z,{uv:0,receive:false}); troffers.push(box(1.18,.02,.58,red?panelRed:dead?deadPanel:buzz?buzzPanel:panelMat,x,H-.055,z,{uv:0,receive:false})); }
+const backPanel = glow(T.troffer,0xe6f4d8,1.3); gridMat(backPanel,'back'); box(1.24,.06,.64,M.white,6.5,H-.02,-5.5,{uv:0}); box(1.18,.02,.58,backPanel,6.5,H-.055,-5.5,{uv:0});
 const officePanel = glow(T.troffer,0xfff1d6,1.4); gridMat(officePanel); box(1.24,.06,.64,M.white,-7.5,H-.02,-5.5,{uv:0}); box(1.18,.02,.58,officePanel,-7.5,H-.055,-5.5,{uv:0});
-const Lmain = gridLight(spot(0xf2f4ff,0,new V3(0,H-.1,2),new V3(0,0,2.2),1.35,.9,16,true),38);
+const Lmain = gridLight(spot(0xeef6e2,0,new V3(0,H-.1,2),new V3(0,0,2.2),1.35,.9,16,true),31);
 const Lcash = gridLight(point(0xfff4e2,0,new V3(-8,H-.3,4.2),12),7);
 const Lright= gridLight(point(0xf2f4ff,0,new V3(7,H-.3,2),12),7);
 const Lcool = gridLight(point(0xdfeaff,0,new V3(-1,1.9,-1.6),9),6);
-const Lback = gridLight(point(0xdfe8ff,0,new V3(6.5,H-.35,-5.5),9),6);
+const Lback = gridLight(point(0xe6f2da,0,new V3(6.5,H-.35,-5.5),9),5,'back');
 const Loff  = gridLight(point(0xffe2b0,0,new V3(-7.5,H-.4,-5.5),8),5);
 const Lred  = point(0xff1a0a,0,new V3(1.5,H-.4,-.5),7);
 
@@ -690,10 +746,10 @@ gondolaX.forEach((gx,i)=>{ const g=new THREE.Group(); g.position.set(gx,0,4.68);
 });
 
 /* ============================== COOLER WALL ============================== */
-const coolerDoors=[];
+const coolerDoors=[]; let coldHdr, atmMat, dumpLid; const mopBucket=new THREE.Group(), wetSign=new THREE.Group(), hotdogs=[];
 { const x0=-4.6, n=7;
   box(7.4,.3,.8,M.black,-1,.15,-2.6,{collide:true,uv:0}); box(7.4,.55,.8,M.black,-1,2.73,-2.6,{uv:0});
-  const hdr=glow(T.cold,0xffffff,1.0); gridMat(hdr); mesh(new THREE.PlaneGeometry(7,.45),hdr,-1,2.73,-2.19);
+  coldHdr=glow(T.cold,0xffffff,1.0); gridMat(coldHdr); mesh(new THREE.PlaneGeometry(7,.45),coldHdr,-1,2.73,-2.19);
   const back=gridMat(glow(null,0xe9f3ff,1.1)); box(7.2,2.15,.02,back,-1,1.38,-2.96,{receive:false,uv:0});
   const led=gridMat(glow(null,0xeaf4ff,2.2));
   const shelfY=[.36,.76,1.16,1.56,1.96];
@@ -703,7 +759,7 @@ const coolerDoors=[];
     for(const y of shelfY){ box(.95,.015,.62,M.steel,cx,y,-2.6,{uv:0}); box(.95,.03,.004,M.priceStrip,cx,y-.012,-2.29,{uv:0}); }
     // contents
     for(let s=0;s<5;s++){ const y=shelfY[s]+.008;
-      if(d<5){ const bi=[0,1,2,7,6][d]; for(let k=0;k<6;k++) for(const dz of [-.36,-.46]) addItem(P.bottle(bi),new V3(cx-.38+k*.152,y,-2.0+dz),rnd()*.5,{door:d},.24); }
+      if(d<5){ const bi=[0,1,2,7,6][d]; for(let k=0;k<6;k++) for(const dz of [-.36,-.46]) addItem(P.bottle(bi),new V3(cx-.38+k*.152,y,-2.0+dz),rnd()*.5,{door:d,s,k,front:dz===-.36},.24); }
       else { const ci=d===5?(s%2?3:0):5; for(let k=0;k<7;k++) for(const dz of [-.36,-.44]) for(const st of [0,.122]) { if(s===4&&st) continue; addItem(P.can(ci),new V3(cx-.39+k*.13,y+st,-2.0+dz),rnd()*6,{door:d},.122); } }
     }
     // glass door on a hinge
@@ -714,6 +770,7 @@ const coolerDoors=[];
     coolerDoors.push(piv);
   }
   box(.07,2.15,.07,M.black,x0+n,1.38,-2.24,{uv:0});
+  for(const x of [x0-.05,x0+n+.05]) box(.1,2.95,.85,M.black,x,1.475,-2.6,{uv:0,cast:true});
   colliders.push({minX:-4.7,maxX:2.7,minZ:-3,maxZ:-2.15,on:true});
 }
 
@@ -737,7 +794,7 @@ const hotdogMat = phys({ color:0x9a3b1f, roughness:.32, clearcoat:.6, clearcoatR
   const rg=new THREE.CylinderGeometry(.012,.012,.56,10); rg.rotateX(Math.PI/2);
   for(let i=0;i<9;i++) mesh(rg,M.steel,-.18+i*.045,.115,0,{parent:R});
   const dog=new THREE.CapsuleGeometry(.014,.13,4,10); dog.rotateX(Math.PI/2);
-  for(let i=0;i<6;i++) mesh(dog,hotdogMat,-.16+i*.065,.14,(i%2?.1:-.1),{parent:R});
+  for(let i=0;i<6;i++) hotdogs.push(mesh(dog,hotdogMat,-.16+i*.065,.14,(i%2?.1:-.1),{parent:R}));
   box(.5,.18,.62,M.glass,0,.22,0,{parent:R,uv:0}).renderOrder=2;
   box(.2,.06,.02,glow(null,0xff8a3a,1.2),0,.05,.32,{parent:R,uv:0});
 }
@@ -747,7 +804,7 @@ box(2.2,.02,.7,gridMat(glow(null,0xcfe6ff,.6)),8.9,.45,1.2,{uv:0});
 for(let i=0;i<10;i++) addItem(P.candy(i%6),new V3(8.0+i*.2,.5,1.0+(i%2)*.3),rnd()*3,{},.03,1.5);
 // ATM
 { const A=new THREE.Group(); A.position.set(9.5,0,6.4); scene.add(A); box(.7,1.55,.62,M.darkMetal,0,.78,0,{parent:A,uv:0,cast:true}); colliders.push({minX:9.1,maxX:9.9,minZ:6.05,maxZ:6.75,on:true});
-  const am=glow(T.atm,0xffffff,1.0); gridMat(am); mesh(new THREE.PlaneGeometry(.32,.24),am,-.352,1.2,0,{parent:A,ry:-Math.PI/2});
+  atmMat=glow(T.atm,0xffffff,1.0); gridMat(atmMat); mesh(new THREE.PlaneGeometry(.32,.24),atmMat,-.352,1.2,0,{parent:A,ry:-Math.PI/2});
   box(.12,.06,.36,M.black,-.39,.95,0,{parent:A,uv:0}); box(.02,.2,.5,gridMat(glow(null,0x2a6adf,1.2)),-.355,1.66,0,{parent:A,uv:0}); }
 // trash can by the front door (swing-top)
 const trashCan = new THREE.Group(); trashCan.position.set(1.15,0,7.25); scene.add(trashCan);
@@ -773,7 +830,7 @@ const wallClock=new THREE.Group(); wallClock.position.set(3.6,2.45,-2.86); scene
 // security dome mirror
 mesh(new THREE.SphereGeometry(.22,24,12,0,Math.PI*2,0,Math.PI/2),std({color:0xffffff,metalness:1,roughness:.05,envMap:envTex,envMapIntensity:1}),9.6,H-.01,-2.6,{rx:Math.PI});
 // wet floor sign by back room door
-{ const W=new THREE.Group(); W.position.set(5.4,0,-2.4); W.rotation.y=-.5; scene.add(W); const wm=lit(T.wet,{r:.4}); for(const s of [-1,1]){ const p=box(.3,.62,.01,wm,0,.31,s*.09,{parent:W,uv:0,cast:true}); p.rotation.x=s*.27; } }
+{ const W=wetSign; W.position.set(5.4,0,-2.4); W.rotation.y=-.5; scene.add(W); const wm=lit(T.wet,{r:.4}); for(const s of [-1,1]){ const p=box(.3,.62,.01,wm,0,.31,s*.09,{parent:W,uv:0,cast:true}); p.rotation.x=s*.27; } }
 
 /* ============================== OFFICE ============================== */
 box(1.6,.04,.75,M.woodLam,-6.1,.76,-7.5,{uv:1,cast:true}); for(const x of [-6.85,-5.35]) box(.04,.74,.7,M.darkMetal,x,.37,-7.5,{uv:0}); colliders.push({minX:-6.9,maxX:-5.3,minZ:-7.9,maxZ:-7.1,on:true});
@@ -786,12 +843,12 @@ box(.4,.02,.14,lit(T.keys),-6.2,.79,-7.15,{uv:0});
 const officePhone=new THREE.Group(); officePhone.position.set(-5.6,.78,-7.45); scene.add(officePhone); box(.22,.07,.18,M.black,0,.035,0,{parent:officePhone,uv:0}); mesh(new THREE.CapsuleGeometry(.02,.15,4,8),M.black,0,.095,-.04,{parent:officePhone,rz:Math.PI/2});
 box(.5,1.3,.6,M.metal,-9.6,.65,-7.5,{collide:true,cast:true,uv:0}); for(let i=0;i<3;i++) box(.01,.3,.4,M.darkMetal,-9.34,.25+i*.4,-7.5,{uv:0});
 const breakerBox=box(.4,.5,.1,lit(T.breaker,{r:.5,m:.4}),-8.4,1.5,-7.93,{uv:0});
-box(.3,.42,.01,lit(T.cal),-7.2,1.7,-7.89,{uv:0});
+const calMat=lit(T.cal); box(.3,.42,.01,calMat,-7.2,1.7,-7.89,{uv:0});
 const officeChair=new THREE.Group(); officeChair.position.set(-6.1,0,-6.75); scene.add(officeChair);
 { const c=officeChair; box(.46,.07,.46,M.black,0,.48,0,{parent:c,uv:0,cast:true}); box(.44,.5,.06,M.black,0,.8,.24,{parent:c,uv:0,cast:true}); mesh(new THREE.CylinderGeometry(.025,.025,.38,10),M.steel,0,.27,0,{parent:c});
   for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; const leg=box(.3,.03,.04,M.black,Math.cos(a)*.15,.07,Math.sin(a)*.15,{parent:c,uv:0}); leg.rotation.y=-a; mesh(new THREE.SphereGeometry(.03,8,6),M.black,Math.cos(a)*.3,.03,Math.sin(a)*.3,{parent:c}); } }
 const chairHome={x:-6.1,z:-6.75,ry:0};
-const offWin = box(.04,.7,1.6,M.glass,-9.88,2,-5.5,{uv:0}); box(.02,.7,1.6,std({color:0x0a0d14,roughness:.2,envMap:envTex,envMapIntensity:1.2}),-9.91,2,-5.5,{uv:0});
+box(.012,.7,1.6,std({color:0x0a0d14,roughness:.2,envMap:envTex,envMapIntensity:1.2}),-9.885,2,-5.5,{uv:0}); const offWin = box(.01,.7,1.6,M.glass,-9.865,2,-5.5,{uv:0}); offWin.renderOrder=2; for(const [w,h,y,z] of [[.04,.06,2.38,-5.5],[.04,.06,1.62,-5.5]]) box(w,h,1.68,M.darkMetal,-9.86,y,z,{uv:0}); for(const z of [-6.33,-4.67]) box(.04,.82,.06,M.darkMetal,-9.86,2,z,{uv:0});
 
 /* ============================== BACK ROOM ============================== */
 for(const z of [-7.5,-4.4]){ const s=new THREE.Group(); s.position.set(9.6,0,z+.8); scene.add(s);
@@ -804,7 +861,7 @@ colliders.push({minX:9.25,maxX:10,minZ:-8,maxZ:-2.6,on:true});
   for(let l=0;l<3;l++) for(let i=0;i<4;i++){ const x=4.9+(i%2)*.6, z=-7.45+Math.floor(i/2)*.5; box(.56,.22,.46,std({color:0x2a7ad4,roughness:.4}),x,.25+l*.23,z,{uv:0,cast:true}); }
   box(1.2,.7,1.0,wrap,5.2,.5,-7.2,{uv:0}).renderOrder=2; }
 // mop bucket
-{ const B=new THREE.Group(); B.position.set(3.7,0,-6.6); scene.add(B); mesh(latheUV([[0,0],[.2,0],[.23,.32],[0,.32]],18),M.yellow,0,.05,0,{parent:B,cast:true}); box(.18,.2,.22,M.yellow,0,.45,.05,{parent:B,uv:0}); mesh(new THREE.CylinderGeometry(.012,.012,1.3,8),std({color:0x3a6ad4,roughness:.5}),.05,.9,-.05,{parent:B,rz:.15}); for(const s of [-1,1]) mesh(new THREE.CylinderGeometry(.03,.03,.02,10),M.black,s*.16,.03,.12,{parent:B,rz:Math.PI/2}); colliders.push({minX:3.45,maxX:3.95,minZ:-6.85,maxZ:-6.35,on:true}); }
+{ const B=mopBucket; B.position.set(3.7,0,-6.6); scene.add(B); mesh(latheUV([[0,0],[.2,0],[.23,.32],[0,.32]],18),M.yellow,0,.05,0,{parent:B,cast:true}); box(.18,.2,.22,M.yellow,0,.45,.05,{parent:B,uv:0}); mesh(new THREE.CylinderGeometry(.012,.012,1.3,8),std({color:0x3a6ad4,roughness:.5}),.05,.9,-.05,{parent:B,rz:.15}); for(const s of [-1,1]) mesh(new THREE.CylinderGeometry(.03,.03,.02,10),M.black,s*.16,.03,.12,{parent:B,rz:Math.PI/2}); colliders.push({minX:3.45,maxX:3.95,minZ:-6.85,maxZ:-6.35,on:true}); }
 // trash bag (realistic: lumpy sphere, gathered neck, tied ears)
 function trashBagGeo(sd){ const s0=seed; seed=sd; const R=.28; const g=new THREE.SphereGeometry(R,44,32); const p=g.attributes.position; const v=new V3(); const ph=[rnd()*6,rnd()*6,rnd()*6,rnd()*6];
   for(let i=0;i<p.count;i++){ v.fromBufferAttribute(p,i); const y=v.y/R, a=Math.atan2(v.z,v.x);
@@ -821,7 +878,7 @@ function trashBagGeo(sd){ const s0=seed; seed=sd; const R=.28; const g=new THREE
   all.translate(0,R*.7615,0); seed=s0; return all; }
 const BAGGEOS=[trashBagGeo(11),trashBagGeo(29),trashBagGeo(47)];
 function makeBag(i,x,z,ry=0,s=1){ const m=mesh(BAGGEOS[i%3],M.bag,x,0,z,{ry,s,cast:true}); return m; }
-const bagNormal=makeBag(0,8.55,-7.35,.4);
+const bagNormal=makeBag(0,8.55,-7.35,.4); const bagNormal2=makeBag(2,8.15,-6.75,1.1); bagNormal2.visible=false;
 const bagCounter=makeBag(1,-6.55,1.0,1.2,.85); bagCounter.position.y=1.0; bagCounter.visible=false;
 const bagPile=new THREE.Group(); scene.add(bagPile); bagPile.visible=false;
 [[-2,-1.6],[-1.3,-1.5],[-.6,-1.65],[-1.65,-1.0],[-.95,-1.05],[-1.35,-1.35]].forEach(([x,z],i)=>{ const b=makeBag(i,x,z,i*1.3,.9+(i%3)*.1); bagPile.add(b); if(i>=4) b.position.y=.38; });
@@ -871,7 +928,7 @@ box(.35,.25,.25,M.darkMetal,7.5,2.75,-8.2,{uv:0}); const wp=gridMat(glow(null,0x
 const Lwall = gridLight(spot(0xffa64d,0,new V3(7.5,2.6,-8.4),new V3(7,0,-11.5),1.1,.8,16,false),60,'out');
 const Lside = gridLight(spot(0xffb060,0,new V3(10.3,2.8,2),new V3(13,0,3),1.1,.8,14,false),35,'out');
 box(.25,.2,.3,M.darkMetal,10.15,2.85,2,{uv:0}); box(.04,.05,.22,wp,10.3,2.74,2,{uv:0});
-{ const d=new THREE.Group(); d.position.set(5.5,0,-12); scene.add(d); box(2.2,1.3,1.3,std({color:0x1f3d2a,roughness:.6,metalness:.4,envMap:envTex,envMapIntensity:.3}),0,.7,0,{parent:d,cast:true,uv:0}); box(2.25,.08,1.4,std({color:0x111,roughness:.6}),0,1.4,-.05,{parent:d,uv:0,rx:-.12}); colliders.push({minX:4.35,maxX:6.65,minZ:-12.7,maxZ:-11.3,on:true}); for(let i=0;i<3;i++) makeBag(i,4.6+i*.5,-11.0,i).scale.setScalar(.8); }
+{ const d=new THREE.Group(); d.position.set(5.5,0,-12); scene.add(d); box(2.2,1.3,1.3,std({color:0x1f3d2a,roughness:.6,metalness:.4,envMap:envTex,envMapIntensity:.3}),0,.7,0,{parent:d,cast:true,uv:0}); dumpLid=box(2.25,.08,1.4,std({color:0x111,roughness:.6}),0,1.4,-.05,{parent:d,uv:0,rx:-.12}); colliders.push({minX:4.35,maxX:6.65,minZ:-12.7,maxZ:-11.3,on:true}); for(let i=0;i<3;i++) makeBag(i,4.6+i*.5,-11.0,i).scale.setScalar(.8); }
 { box(1.4,1.6,.8,M.white,-7.6,.8,9.0,{collide:true,cast:true,uv:0}); box(1.2,.42,.02,gridMat(glow(T.ice,0xffffff,1.4),'out'),-7.6,1.25,9.41,{uv:0});
   box(1.3,1.5,.8,std({color:0x5f6366,metalness:.6,roughness:.5}),6.5,.75,9.0,{collide:true,cast:true,uv:0});
   const tank=latheUV([[0,0],[.14,0],[.15,.05],[.15,.42],[.12,.48],[.05,.5],[0,.5]],18); for(let i=0;i<4;i++) mesh(tank,std({color:0xdcd6c8,roughness:.4,envMap:envTex,envMapIntensity:.3}),6.05+i*.3,.05,9.0,{cast:true}); }
@@ -1046,14 +1103,14 @@ function iaLabel(ia){ if(ia.action && ia.enabled()) return typeof ia.label==='fu
 const START={x:-8.4,z:4.4,yaw:-Math.PI/2};
 const player={ pos:new V3(START.x,0,START.z), yaw:START.yaw, pitch:-.05, h:1.62, r:.3, bob:0, canMove:true, flash:false, inside:true, shake:0, lastZ:0 };
 const keys={}; let sens=1, dragLook=false, dragging=false;
-let state='title', paused=false, tension=0, targetTension=0, current=null, noteOpen=false;
+let state='title', paused=false, tension=0, targetTension=0, current=null, noteOpen=false, uiOpen=false;
 function resolve(p,r){ for(let it=0;it<2;it++) for(const c of colliders){ if(!c.on) continue; const cx=clamp(p.x,c.minX,c.maxX), cz=clamp(p.z,c.minZ,c.maxZ); const dx=p.x-cx, dz=p.z-cz, d2=dx*dx+dz*dz;
   if(d2<r*r){ if(d2>1e-8){ const d=Math.sqrt(d2), k=(r-d)/d; p.x+=dx*k; p.z+=dz*k; } else { const o=[p.x-c.minX,c.maxX-p.x,p.z-c.minZ,c.maxZ-p.z]; const m=Math.min(...o); if(m===o[0]) p.x=c.minX-r; else if(m===o[1]) p.x=c.maxX+r; else if(m===o[2]) p.z=c.minZ-r; else p.z=c.maxZ+r; } } } }
 const isInside = p => p.x>-10&&p.x<10&&p.z>-8&&p.z<8;
 const inOffice = () => player.pos.x<-5 && player.pos.z<-3.15;
 function updatePlayer(dt){
   const f=new V3(-Math.sin(player.yaw),0,-Math.cos(player.yaw)), r=new V3(Math.cos(player.yaw),0,-Math.sin(player.yaw));
-  const mv=new V3(); if(player.canMove && !noteOpen){ if(keys.KeyW||keys.ArrowUp) mv.add(f); if(keys.KeyS||keys.ArrowDown) mv.sub(f); if(keys.KeyD||keys.ArrowRight) mv.add(r); if(keys.KeyA||keys.ArrowLeft) mv.sub(r); }
+  const mv=new V3(); if(player.canMove && !noteOpen && !uiOpen){ if(keys.KeyW||keys.ArrowUp) mv.add(f); if(keys.KeyS||keys.ArrowDown) mv.sub(f); if(keys.KeyD||keys.ArrowRight) mv.add(r); if(keys.KeyA||keys.ArrowLeft) mv.sub(r); }
   const run=keys.ShiftLeft||keys.ShiftRight; const sp=run?4.4:2.3; const moving=mv.lengthSq()>0;
   if(moving){ mv.normalize().multiplyScalar(sp*dt); const before=player.pos.clone(); player.pos.add(mv); resolve(player.pos,player.r); player.pos.x=clamp(player.pos.x,-40,45); player.pos.z=clamp(player.pos.z,-32,40);
     const dist=player.pos.distanceTo(before); const pb=player.bob; player.bob+=dist*(run?2.1:2.6); if(Math.floor(pb/Math.PI)!==Math.floor(player.bob/Math.PI)) sfx.step(!isInside(player.pos)); }
@@ -1067,105 +1124,303 @@ function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*
 function manPlace(m,x,z,face){ m.visible=true; m.position.set(x,0,z); if(face!==undefined) m.rotation.y=face; }
 function animMan(m,phase,moving){ const u=m.userData, sw=Math.sin(phase)*(moving?.55:0); u.legL.rotation.x=sw; u.legR.rotation.x=-sw; u.armL.rotation.x=-sw*.7; u.armR.rotation.x=sw*.7; }
 function updateDoors(dt){
-  const near=(x,z)=>Math.hypot(player.pos.x-x,player.pos.z-z)<1.7;
+  const near=(x,z)=>Math.hypot(player.pos.x-x,player.pos.z-z)<1.7||customers.some(c=>c.g.visible&&!c.tells.has('nochime')&&Math.hypot(c.g.position.x-x,c.g.position.z-z)<1.9);
   frontDoor.target = near(2.8,8)? frontDoor.openAngle : 0;
   for(const d of doors){ d.angle=lerp(d.angle,d.target,Math.min(1,dt*(d===frontDoor?5:7))); d.pivot.rotation.y=d.angle+(d.shake?(Math.random()-.5)*d.shake:0); if(d!==frontDoor) d.col.on=Math.abs(d.angle-d.closedAngle)<.25; }
   if((player.lastZ-8)*(player.pos.z-8)<0) sfx.chime(); player.lastZ=player.pos.z;
 }
 
-/* ============================== ANOMALIES ============================== */
+/* ============================== WORLD STATE & ANOMALIES ============================== */
 // W holds every changeable piece of world state; resetWorld() puts all of it back to normal.
-const W = { clockDir:1, float:false, angel:false, knock:false, phoneOff:false, armSway:false };
+const W = { clockDir:1, clockFixed:null, float:false, angel:false, knock:false, phoneOff:false, armSway:false, silence:false };
 let lightning=0;
 function setEm(m,t){ m.emissiveMap=t; m.needsUpdate=true; }
+const openItem = grid.items.find(i=>i.m===openSign);
+const missingRow = PRODUCTS.filter(r=>r.tag.door===1 && r.tag.s===2 && r.tag.front && r.tag.k>=1 && r.tag.k<=3);
 function resetWorld(){
   setEm(exitFront,T.exit); posterMat.map=T.missing; posterMat.needsUpdate=true; setEm(signMat,T.sign); setEm(priceMat,T.priceSign); setEm(register.screen,T.pos);
+  setEm(coldHdr,T.cold); setEm(atmMat,T.atm); calMat.map=T.cal; calMat.needsUpdate=true; openItem.base=2.0;
   resetProducts(); for(const d of coolerDoors) d.rotation.y=0;
-  bagNormal.visible=true; bagCounter.visible=false; bagPile.visible=false;
+  bagNormal.visible=true; bagNormal2.visible=false; bagCounter.visible=false; bagPile.visible=false;
   officeChair.position.set(chairHome.x,0,chairHome.z); officeChair.rotation.y=chairHome.ry;
-  panelRed.emissive.setHex(0xf3f6ff); Lred.intensity=0;
+  panelRed.emissive.setHex(0xe6f4d8); Lred.intensity=0;
   rainMat.uniforms.uDir.value=1;
   car.g.visible=false; car.lights=false; car.engine=false; car.col.on=false;
   man.g.visible=false; man.mode='hidden'; manCam.visible=false;
   footprints.visible=false; ceilingArm.visible=false;
   handset.position.set(0,0,0); handset.rotation.set(0,0,0); cord.visible=true; cordHang.visible=false;
   counterCan.scale.setScalar(1); counterCan.position.set(-6.35,1.022,2.95);
-  hotdogMat.color.setHex(0x9a3b1f);
+  hotdogMat.color.setHex(0x9a3b1f); hotdogs.forEach(h=>h.visible=true);
+  dumpLid.rotation.x=-.12; dumpLid.position.y=1.4; mopBucket.visible=true; wetSign.position.set(5.4,0,-2.4); wetSign.rotation.y=-.5;
+  screenMat.color.setHex(0xb8ffcf);
   grid.flick=0; grid.on=true; grid.off.clear();
   officeDoor.locked=false; officeDoor.target=officeDoor.openAngle;
-  backDoor.target=0; backDoor.shake=0; backDoor.locked=false;
-  Object.assign(W,{clockDir:1,float:false,angel:false,knock:false,phoneOff:false,armSway:false});
+  backDoor.target=0; backDoor.shake=0; officeDoor.shake=0;
+  Object.assign(W,{clockDir:1,clockFixed:null,float:false,angel:false,knock:false,phoneOff:false,armSway:false,silence:false});
   player.flash=false; targetTension=0;
 }
-const A=[]; const anomaly=(id,desc,apply,o={})=>A.push({id,desc,apply,...o});
-anomaly('exit','The exit sign over the front door said STAY.',()=>setEm(exitFront,T.stay));
-anomaly('poster','The missing poster by the door had your name and face on it.',()=>{ posterMat.map=T.missingSam; posterMat.needsUpdate=true; });
-anomaly('clock','The wall clock by the back room was running backwards.',()=>W.clockDir=-40);
-anomaly('rain','The rain outside was falling up.',()=>rainMat.uniforms.uDir.value=-1);
-anomaly('prices','Every price on the road sign read 6.66.',()=>setEm(priceMat,T.priceEvil));
-anomaly('sign','The sign over the windows said GAS & GONE.',()=>setEm(signMat,T.signGone));
-anomaly('red','One of the ceiling lights over the middle aisle glowed red.',()=>{ panelRed.emissive.setHex(0xff1a0a); Lred.intensity=6; });
-anomaly('float','The bottles in the middle cooler door were floating.',()=>W.float=true);
-anomaly('cooler','A cooler door was standing open.',()=>{ coolerDoors[4].rotation.y=1.2; });
-anomaly('backwards','Every product on the middle aisle was turned to face the wall.',()=>{ for(const r of PRODUCTS) if(r.tag.g===1){ _m.copy(r.base).multiply(_r.makeRotationY(Math.PI)); setRec(r,_m); r.dirty=true; } });
-anomaly('upside','Everything on the aisle nearest the back room was upside down.',()=>{ for(const r of PRODUCTS) if(r.tag.g===2){ _m.copy(r.base).multiply(_t.makeTranslation(0,r.h,0)).multiply(_r.makeRotationZ(Math.PI)); setRec(r,_m); r.dirty=true; } });
-anomaly('giant','The soda can on the counter was enormous.',()=>{ counterCan.scale.setScalar(7); counterCan.position.set(-6.4,1.022,2.4); });
-anomaly('hotdogs','The hot dogs on the roller were fingers.',()=>hotdogMat.color.setHex(0xcfb3a0));
-anomaly('phone','The phone behind the counter was off the hook.',()=>{ W.phoneOff=true; handset.position.set(.02,-.7,0); handset.rotation.z=.3; cord.visible=false; cordHang.visible=true; });
-anomaly('canopy','The lights over the gas pumps were off.',()=>grid.off.add('canopy'));
-anomaly('flicker','The lights in the store would not stop flickering.',()=>grid.flick=.22);
-anomaly('office','The office door was shut and locked from the inside.',()=>{ officeDoor.target=0; officeDoor.locked=true; });
-anomaly('bags','A pile of trash bags was sitting in front of the coolers.',()=>bagPile.visible=true);
-anomaly('bagcounter','A trash bag was sitting on the counter by the register.',()=>bagCounter.visible=true);
-anomaly('chair','The office chair was in the middle of the store, facing the counter.',()=>{ officeChair.position.set(2.3,0,5.6); officeChair.rotation.y=Math.PI*.42; });
-anomaly('footprints','Wet footprints led from the front door to the office.',()=>footprints.visible=true);
-anomaly('arm','An arm was hanging out of the ceiling over the aisle.',()=>{ ceilingArm.visible=true; W.armSway=true; });
-anomaly('pumpman','A man was standing at the pumps in the rain, watching the store.',()=>{ manPlace(man.g,-2.2,16.8,0); man.mode='still'; });
-anomaly('car','A grey car sat at the pumps with its headlights on. Nobody was in it.',()=>{ car.g.visible=true; car.lights=true; car.engine=true; car.col.on=true; });
-anomaly('camera','The security monitor in the office showed someone standing behind the counter.',()=>{ manPlace(manCam,-8.8,6.6,Math.PI*.8); });
-anomaly('register','The register screen said HE IS STILL HERE.',()=>setEm(register.screen,T.posEvil));
-anomaly('angel','Someone was standing in the aisle. Every time you looked away, he got closer.',()=>{ manPlace(man.g,2.3,-1.3,0); man.mode='angel'; W.angel=true; targetTension=.6; },{hostile:true});
-anomaly('knock','Someone was knocking on the back door.',()=>{ W.knock=true; },{hostile:true});
+// Areas the player can report. An anomaly lists every area where it can be seen.
+const AREAS=[['front','Counter & front windows'],['aisles','Aisles'],['drinks','Coolers, coffee & hot dogs'],['back','Back room'],['office','Office'],['outside','Outside & lot']];
+const A=[]; const anomaly=(id,areas,tier,desc,apply,o={})=>A.push({id,areas:[].concat(areas),tier,desc,apply,...o});
+// tier 1: subtle, early hours · tier 2: clearly wrong · tier 3: disturbing, late hours
+anomaly('missingrow','drinks',1,'Three bottles were missing from the front of a cooler shelf.',()=>{ for(const r of missingRow){ _m.makeScale(.0001,.0001,.0001); setRec(r,_m); r.dirty=true; } });
+anomaly('clockoff','drinks',1,'The wall clock by the back room showed the wrong time.',()=>{ W.clockFixed=4*60+20; });
+anomaly('coldred','drinks',1,'The ICE COLD DRINKS sign over the coolers was red instead of blue.',()=>setEm(coldHdr,T.coldRed));
+anomaly('wetsign',['aisles','drinks'],1,'The wet floor sign had moved into the middle aisle.',()=>{ wetSign.position.set(.4+1.9,0,1.8); wetSign.rotation.y=1.2; });
+anomaly('mop','back',1,'The mop bucket was gone from the back room.',()=>mopBucket.visible=false);
+anomaly('dumpster','outside',1,'The dumpster lid behind the store was standing open.',()=>{ dumpLid.rotation.x=-1.25; dumpLid.position.y=1.9; });
+anomaly('chairturn','office',1,'The office chair was turned to face the wall.',()=>{ officeChair.rotation.y=Math.PI*.5; });
+anomaly('calendar','office',1,'The office calendar said October 1987.',()=>{ calMat.map=T.cal87; calMat.needsUpdate=true; });
+anomaly('atm','front',1,'The ATM screen by the front door was dark.',()=>setEm(atmMat,T.atmOff));
+anomaly('opensign','front',1,'The OPEN sign in the window was switched off.',()=>{ openItem.base=0; });
+anomaly('nohotdogs','drinks',1,'The hot dog roller was empty.',()=>hotdogs.forEach(h=>h.visible=false));
+anomaly('twobags','back',1,'There were two trash bags by the back door instead of one.',()=>bagNormal2.visible=true);
+anomaly('monitoroff','office',1,'The security monitor in the office was off.',()=>screenMat.color.setHex(0x050505));
+anomaly('backwards','aisles',1,'Every product on the middle aisle was turned to face the wall.',()=>{ for(const r of PRODUCTS) if(r.tag.g===1){ _m.copy(r.base).multiply(_r.makeRotationY(Math.PI)); setRec(r,_m); r.dirty=true; } });
+anomaly('canopy','outside',1,'The lights over the gas pumps were off.',()=>grid.off.add('canopy'));
+anomaly('office','office',1,'The office door was shut and locked from the inside.',()=>{ officeDoor.target=0; officeDoor.locked=true; });
+anomaly('cooler','drinks',1,'A cooler door was standing open.',()=>{ coolerDoors[4].rotation.y=1.2; });
+anomaly('exit','front',2,'The exit sign over the front door said STAY.',()=>setEm(exitFront,T.stay));
+anomaly('poster','front',2,'The missing poster by the door had your name and face on it.',()=>{ posterMat.map=T.missingSam; posterMat.needsUpdate=true; });
+anomaly('clock','drinks',2,'The wall clock by the back room was running backwards.',()=>W.clockDir=-40);
+anomaly('rain','outside',2,'The rain outside was falling up.',()=>rainMat.uniforms.uDir.value=-1);
+anomaly('prices','outside',2,'Every price on the road sign read 6.66.',()=>setEm(priceMat,T.priceEvil));
+anomaly('sign','outside',2,'The sign over the windows said GAS & GONE.',()=>setEm(signMat,T.signGone));
+anomaly('red','aisles',2,'One of the ceiling lights over the aisles glowed red.',()=>{ panelRed.emissive.setHex(0xff1a0a); Lred.intensity=6; });
+anomaly('float','drinks',2,'The bottles in the middle cooler door were floating.',()=>W.float=true);
+anomaly('upside','aisles',2,'Everything on the aisle nearest the back room was upside down.',()=>{ for(const r of PRODUCTS) if(r.tag.g===2){ _m.copy(r.base).multiply(_t.makeTranslation(0,r.h,0)).multiply(_r.makeRotationZ(Math.PI)); setRec(r,_m); r.dirty=true; } });
+anomaly('giant','front',2,'The soda can on the counter was enormous.',()=>{ counterCan.scale.setScalar(7); counterCan.position.set(-6.4,1.022,2.4); });
+anomaly('phone','front',2,'The phone behind the counter was off the hook.',()=>{ W.phoneOff=true; handset.position.set(.02,-.7,0); handset.rotation.z=.3; cord.visible=false; cordHang.visible=true; });
+anomaly('bags','drinks',2,'A pile of trash bags was sitting in front of the coolers.',()=>bagPile.visible=true);
+anomaly('bagcounter','front',2,'A trash bag was sitting on the counter.',()=>bagCounter.visible=true);
+anomaly('car','outside',2,'A grey car sat at the pumps with its headlights on. Nobody was in it.',()=>{ car.g.visible=true; car.lights=true; car.engine=true; car.col.on=true; });
+anomaly('hotdogs','drinks',3,'The hot dogs on the roller were fingers.',()=>hotdogMat.color.setHex(0xcfb3a0));
+anomaly('chair',['aisles','front'],3,'The office chair was in the middle of the store, facing the counter.',()=>{ officeChair.position.set(2.3,0,5.6); officeChair.rotation.y=Math.PI*.42; });
+anomaly('footprints',['front','aisles','office'],3,'Wet footprints led from the front door to the office.',()=>footprints.visible=true);
+anomaly('arm','aisles',3,'An arm was hanging out of the ceiling over the aisle.',()=>{ ceilingArm.visible=true; W.armSway=true; });
+anomaly('pumpman','outside',3,'A man was standing at the pumps in the rain, watching the store.',()=>{ manPlace(man.g,-2.2,16.8,0); man.mode='still'; });
+anomaly('camera','office',3,'The security monitor showed someone standing behind the counter.',()=>{ manPlace(manCam,-8.8,6.6,Math.PI*.8); });
+anomaly('register','front',3,'The register screen said HE IS STILL HERE.',()=>setEm(register.screen,T.posEvil));
+anomaly('angel',['aisles','drinks'],3,'Someone was standing in the aisle. Every time you looked away, he got closer.',()=>{ manPlace(man.g,2.3,-1.3,0); man.mode='angel'; W.angel=true; targetTension=.6; },{hostile:true});
+anomaly('knock','back',3,'Someone was knocking on the back door.',()=>{ W.knock=true; },{hostile:true});
+
+/* ============================== CUSTOMERS ============================== */
+const CIGS=['RANGER','SILVER LINE','EAGLE','NORTHERN'];
+const NUM=['zero','one','two','three','four'];
+const ITEM_KINDS=[
+  {k:'can',n:6,price:1.89,label:i=>`${BR.soda[i].n} ${BR.soda[i].s} can`,geo:()=>G.can,mat:i=>MAT.can[i]},
+  {k:'bag',n:6,price:3.49,label:i=>`${BR.chips[i].n} ${BR.chips[i].s}`,geo:()=>G.bagS,mat:i=>MAT.bag[i]},
+  {k:'candy',n:6,price:1.29,label:i=>`${BR.candy[i].n} bar`,geo:()=>G.candy,mat:i=>MAT.candy[i]},
+  {k:'soup',n:4,price:2.19,label:i=>`Kettle Kitchen ${BR.soup[i].n}`,geo:()=>G.soup,mat:i=>MAT.soup[i]},
+];
+const REQ_PRICE={cig:6.25,coffee:.99,hotdog:1.99};
+const LOOK={ jackets:[0x2b3a4f,0x4a2d24,0x2f3b2a,0x5b5f63,0x1c1c20,0x6b4b2a,0x7a1f1f,0x23324a,0x8a6a2a,0x3a2a4a], pants:[0x1d2330,0x2a2a2a,0x3b3426,0x1a2a3a,0x4a4a42], skins:[0xe0b89a,0xc79a7a,0x9a6b4c,0x6b4a35,0xf0cdb2], hair:[0x1a1410,0x3a2a1a,0x6b5030,0x8a8a88,0xb08a50] };
+const randLook=()=>({jacket:rpick(LOOK.jackets),pants:rpick(LOOK.pants),skin:rpick(LOOK.skins),hair:rpick(LOOK.hair),hat:Math.floor(Math.random()*3),h:.93+Math.random()*.13,w:.9+Math.random()*.25});
+const dripGeo=new THREE.BufferGeometry(); dripGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(30),3));
+function makePerson(L,wet){
+  const g=new THREE.Group();
+  const jm = wet? phys({color:L.jacket,roughness:.2,clearcoat:1,clearcoatRoughness:.12,envMap:envTex,envMapIntensity:.9}) : std({color:L.jacket,roughness:.97});
+  const pm=std({color:L.pants,roughness:wet?.5:.95}), sk=std({color:L.skin,roughness:.62}), hm=std({color:L.hair,roughness:.8});
+  const white=std({color:0xeeeae2,roughness:.3}), black=std({color:0x050505,roughness:.15});
+  const torso=new THREE.Mesh(latheUV([[0,0],[.17,0],[.19,.15],[.21,.4],[.23,.52],[.19,.6],[.08,.64],[0,.64]],16),jm); torso.scale.set(1.1*L.w,1,.66*L.w); torso.position.y=.95; torso.castShadow=true; g.add(torso);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.05,.06,.1,10),sk); neck.position.y=1.62; g.add(neck);
+  const head=new THREE.Group(); head.position.y=1.76; g.add(head);
+  const skull=new THREE.Mesh(new THREE.SphereGeometry(.12,24,18),sk); skull.scale.set(.9,1.17,1); skull.castShadow=true; head.add(skull);
+  const eyes=new THREE.Group(); head.add(eyes);
+  for(const sx of [-1,1]){ const e=new THREE.Mesh(new THREE.SphereGeometry(.019,10,8),white); e.position.set(sx*.042,.02,.098); e.scale.z=.5; eyes.add(e); const p=new THREE.Mesh(new THREE.SphereGeometry(.009,8,6),black); p.position.set(sx*.042,.02,.107); eyes.add(p); }
+  const brow=new THREE.Mesh(new THREE.BoxGeometry(.12,.012,.02),hm); brow.position.set(0,.045,.1); head.add(brow);
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(.045,.007,.01),black); mouth.position.set(0,-.07,.108); head.add(mouth);
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(.045,.006,6,16,Math.PI),black); smile.position.set(0,-.055,.106); smile.rotation.z=Math.PI; smile.visible=false; head.add(smile);
+  if(L.hat===0){ const c=new THREE.Mesh(new THREE.SphereGeometry(.128,16,8,0,Math.PI*2,0,Math.PI/2),std({color:L.jacket,roughness:.9})); c.position.y=.05; head.add(c); const br=new THREE.Mesh(new THREE.BoxGeometry(.2,.015,.12),c.material); br.position.set(0,.06,.14); head.add(br); }
+  else if(L.hat===1){ const hood=new THREE.Mesh(new THREE.SphereGeometry(.155,16,12,0,Math.PI*2,0,Math.PI*.62),jm); hood.position.set(0,.02,-.025); hood.rotation.x=-.25; head.add(hood); }
+  else { const hair=new THREE.Mesh(new THREE.SphereGeometry(.124,16,10,0,Math.PI*2,0,Math.PI*.45),hm); hair.position.y=.03; hair.scale.set(.95,1.1,1.05); head.add(hair); }
+  const limb=(r,len,mat,x,y)=>{ const p=new THREE.Group(); p.position.set(x,y,0); const m=new THREE.Mesh(new THREE.CapsuleGeometry(r,len,4,8),mat); m.position.y=-len/2-r*.5; m.castShadow=true; p.add(m); g.add(p); return p; };
+  const legL=limb(.08,.8,pm,-.1,.98), legR=limb(.08,.8,pm,.1,.98), armL=limb(.058,.58,jm,-.29*L.w,1.5), armR=limb(.058,.58,jm,.29*L.w,1.5);
+  for(const a of [armL,armR]){ const h=new THREE.Mesh(new THREE.SphereGeometry(.048,8,6),sk); h.position.y=-.72; a.add(h); }
+  for(const l of [legL,legR]){ const s=new THREE.Mesh(new THREE.BoxGeometry(.11,.07,.26),M.black); s.position.set(0,-.94,.05); l.add(s); }
+  let drips=null; if(wet){ drips=new THREE.Points(dripGeo.clone(),new THREE.PointsMaterial({color:0xbfd6e8,size:.018,transparent:true,opacity:.8})); drips.userData.v=Array.from({length:10},()=>({x:(Math.random()-.5)*.4,z:(Math.random()-.5)*.3,y:Math.random()*.9+.4})); g.add(drips); }
+  g.scale.setScalar(L.h); g.userData={legL,legR,armL,armR,head,eyes,mouth,smile,drips};
+  scene.add(g); return g;
+}
+const customers=[]; let custPlan=[], servedLooks=[];
+function reqLabel(r){ return r.type==='cig'?`Pack of ${CIGS[r.brand]}`:r.type==='coffee'?'Large coffee':r.type==='hotdog'?'Hot dog':r.type==='pump'?`$${r.amount} on pump ${r.pump}`:r.name; }
+function reqPrice(r){ return r.type==='pump'?r.amount:(REQ_PRICE[r.type]||0); }
+function spawnCustomer(){
+  const fakeChance = hour===0?0:.18+hour*.06;
+  const fake = Math.random()<fakeChance;
+  const tells=new Set(); let look=randLook();
+  if(fake){ const opts=['dry','nochime','item','back','dry']; if(servedLooks.length) opts.push('twice','twice'); tells.add(rpick(opts)); if(Math.random()<.25+hour*.05) tells.add(rpick(opts)); tells.add('still'); if(tells.has('twice')) look={...rpick(servedLooks)}; }
+  const wet=!tells.has('dry');
+  const g=makePerson(look,wet);
+  const aisle=rpick([-1.4,2.3,6.5]), bz=.4+Math.random()*3.4;
+  let path;
+  if(tells.has('back')){ g.position.set(4.5,0,-5.4); path=[[4.5,-1.7],[2.3,-1.7],[2.3,5.6],[-3.5,6.0],[-5.35,4.3]]; }
+  else { g.position.set(2.2+Math.random()*1.4,0,16); path=[[2.8,10.2],[2.8,6.4],[aisle,5.6],[aisle,bz,'pause'],[aisle,5.6],[-3.5,6.0],[-5.35,4.3]]; }
+  const c={g,look,fake,tells,wet,state:'walk',path,pi:0,pause:0,speed:1.15+Math.random()*.25,phase:0,patience:95,items:[],reqs:[],blinkT:2+Math.random()*3,blink:0,lastZ:g.position.z,line:''};
+  const n=1+Math.floor(Math.random()*(hour>=2?3:2));
+  for(let i=0;i<n;i++){ const K=rpick(ITEM_KINDS); const bi=Math.floor(Math.random()*K.n); c.items.push({K,bi,label:K.label(bi),price:K.price,scanned:false,mesh:null}); }
+  if(tells.has('item')) c.reqs.push({type:'fake',name:rpick(['Pack of BLACKWATER','Hollow Pine ASH & EMBER chips','Big Buck RED ROOT cola','Kettle Kitchen MARROW soup']),done:false});
+  else if(hour===0 || Math.random()<.65){ const r=Math.random(); c.reqs.push(r<.4?{type:'cig',brand:Math.floor(Math.random()*4),done:false}:r<.62?{type:'coffee',done:false}:r<.78?{type:'hotdog',done:false}:{type:'pump',pump:1+Math.floor(Math.random()*4),amount:rpick([10,20,30,40]),done:false}); }
+  const greet=rpick(['Evening.','Hey.','Long night, huh?','Hi there.','Just these.','Morning. Or night. Whatever it is.']);
+  const ask=c.reqs.map(r=>r.type==='cig'?`And a pack of ${CIGS[r.brand][0]+CIGS[r.brand].slice(1).toLowerCase()}.`:r.type==='coffee'?'And a large coffee, black.':r.type==='hotdog'?'And one of those hot dogs.':r.type==='pump'?`And ${NUM[r.amount/10]||r.amount} ${r.amount===10?'':'tens '}on pump ${NUM[r.pump]}.`.replace('one tens','ten').replace('two tens','twenty').replace('three tens','thirty').replace('four tens','forty'):`And ${r.name.toLowerCase()}.`).join(' ');
+  c.line=(greet+' '+ask).trim();
+  if(fake && Math.random()<.4) c.line=c.line.replace(/^(\S+)/,'$1 $1');
+  customers.push(c); return c;
+}
+function placeCounterItems(c){ c.items.forEach((it,j)=>{ const m=new THREE.Mesh(it.K.geo(),it.K.mat(it.bi)); m.position.set(-6.22-(j%2)*.12,1.022,4.25+j*.17); m.rotation.y=Math.PI/2+(Math.random()-.5)*.4; m.castShadow=true; scene.add(m); it.mesh=m; }); }
+function removeCounterItems(c){ for(const it of c.items) if(it.mesh){ scene.remove(it.mesh); it.mesh=null; } }
+function disposeCustomer(c){ removeCounterItems(c); scene.remove(c.g); c.state='gone'; }
+function clearCustomers(){ for(const c of customers) disposeCustomer(c); customers.length=0; }
+const LEAVE=[[-3.5,6.0],[2.8,6.4],[2.8,10.2],[2.4,17]];
+const VANISH=[[-3.5,6.0],[2.3,5.6],[2.3,-1.7],[4.5,-1.7],[4.5,-5]];
+function sendAway(c,vanish){ removeCounterItems(c); c.state=vanish?'vanish':'leave'; c.path=vanish?VANISH:LEAVE; c.pi=0; c.pause=0; }
+function updateCustomers(dt){
+  for(const c of customers){ const g=c.g, u=g.userData; let moving=false;
+    if(c.state==='walk'||c.state==='leave'||c.state==='vanish'){
+      if(c.pause>0){ c.pause-=dt; }
+      else { const t=c.path[c.pi]; const dx=t[0]-g.position.x, dz=t[1]-g.position.z, d=Math.hypot(dx,dz);
+        if(d<.06){ if(t[2]==='pause'){ c.pause=2.5+Math.random()*4; g.rotation.y=Math.random()<.5?Math.PI/2:-Math.PI/2; } c.pi++;
+          if(c.pi>=c.path.length){ if(c.state==='walk'){ c.state='waiting'; placeCounterItems(c); say('Customer',c.line,{d:4.5}); if(hour===0&&!tutorialServed) toast('A customer is at the register. Press E on the register to ring them up.',6); } else disposeCustomer(c); } }
+        else { const st=Math.min(d,c.speed*dt); g.position.x+=dx/d*st; g.position.z+=dz/d*st; g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(dx,dz),dt*7); moving=true; } }
+    }
+    if(!c.tells.has('nochime') && (c.lastZ-8)*(g.position.z-8)<0 && Math.abs(g.position.x-2.8)<1.6) sfx.chime(); c.lastZ=g.position.z;
+    const near=c.state==='waiting'||c.state==='serving';
+    if(near){ const dx=player.pos.x-g.position.x, dz=player.pos.z-g.position.z; const look=Math.atan2(dx,dz)+(c.fake?0:Math.sin(gt*.4+c.speed*9)*.35); g.rotation.y=lerpAngle(g.rotation.y,look,dt*(c.fake?12:2));
+      if(!c.fake && c.state==='waiting'){ c.patience-=dt; if(c.patience<0){ sendAway(c,false); money-=10; updatePay(); toast('The customer gave up waiting and left. Complaint (-$10)',4); } } }
+    if(c.fake && near){ u.head.rotation.y=clamp(lerpAngle(0,Math.atan2(player.pos.x-g.position.x,player.pos.z-g.position.z)-g.rotation.y,1),-.9,.9); }
+    // blinking and idle sway: real people move a little, fakes do not
+    if(!c.fake){ c.blinkT-=dt; if(c.blinkT<0){ c.blink=.12; c.blinkT=2.5+Math.random()*3; } if(c.blink>0){ c.blink-=dt; } u.eyes.scale.y=c.blink>0?.1:1; if(!moving) g.rotation.z=Math.sin(gt*1.1+c.speed*7)*.012; }
+    const close=Math.hypot(player.pos.x-g.position.x,player.pos.z-g.position.z)<3.6;
+    u.smile.visible=c.fake&&near&&close; u.mouth.visible=!u.smile.visible;
+    if(moving) c.phase+=dt*c.speed*4.2; else c.phase*=.9; animMan(g,c.phase,moving);
+    if(u.drips){ const a=u.drips.geometry.attributes.position; u.drips.userData.v.forEach((v,i)=>{ v.y-=dt*2.2; if(v.y<0) v.y=.5+Math.random()*.5; a.setXYZ(i,v.x,v.y,v.z); }); a.needsUpdate=true; }
+  }
+  for(let i=customers.length-1;i>=0;i--) if(customers[i].state==='gone') customers.splice(i,1);
+}
+
+/* ============================== REGISTER ============================== */
+let reg=null, tutorialServed=false;
+const fmt$ = v => (v<0?'-':'')+'$'+Math.abs(v).toFixed(2);
+const r2 = v => Math.round(v*100)/100;
+function regTotal(c){ return r2(c.items.filter(i=>i.scanned).reduce((a,i)=>a+i.price,0)+c.reqs.filter(r=>r.done).reduce((a,r)=>a+reqPrice(r),0)); }
+function regReady(c){ return c.items.every(i=>i.scanned)&&c.reqs.every(r=>r.done); }
+function matchesHold(r,h){ return h && ((r.type==='cig'&&h.type==='cig'&&h.brand===r.brand)||(r.type==='coffee'&&h.type==='coffee')||(r.type==='hotdog'&&h.type==='hotdog')); }
+function openRegister(){
+  const c=customers.find(x=>x.state==='waiting'||x.state==='serving'); if(!c) return;
+  c.state='serving'; reg={c,give:0,paid:0,msg:c.line,odd:false};
+  if(player.holding){ const r=c.reqs.find(r=>!r.done&&matchesHold(r,player.holding)); if(r){ r.done=true; setHold(null); sfx.rustle(); reg.msg='Thanks.'; } else { reg.msg=c.reqs.some(r=>r.type==='fake')?'...':'That\'s not what I asked for.'; } }
+  uiOpen=true; document.exitPointerLock?.(); $('#reg').hidden=false; renderReg();
+}
+function closeRegister(relock=true){ if(!reg){ uiOpen=false; $('#reg').hidden=true; return; } $('#reg').hidden=true; uiOpen=false; if(reg.c.state==='serving') reg.c.state='waiting'; reg=null; if(relock&&!dragLook&&state==='play') lock(); }
+function renderReg(){
+  if(!reg) return; const c=reg.c; const say=$('#regSay'); say.textContent='"'+reg.msg+'"'; say.className='say'+(reg.odd?' odd':'');
+  $('#regClock').textContent=UI.clock.textContent;
+  const ul=$('#regItems'); ul.innerHTML='';
+  c.items.forEach(it=>{ const li=document.createElement('li'); li.className=it.scanned?'ok':''; li.innerHTML='<span></span>'; li.firstChild.textContent=`${it.label} · ${fmt$(it.price)}`; const b=document.createElement('button'); b.textContent=it.scanned?'Scanned':'Scan'; b.disabled=it.scanned; b.onclick=()=>{ it.scanned=true; sfx.beep(); renderReg(); }; li.appendChild(b); ul.appendChild(li); });
+  const rl=$('#regReq'); rl.innerHTML='';
+  if(!c.reqs.length){ const li=document.createElement('li'); li.textContent='Nothing else.'; rl.appendChild(li); }
+  c.reqs.forEach(r=>{ const li=document.createElement('li'); li.className=r.done?'ok':''; const sp=document.createElement('span'); li.appendChild(sp);
+    if(r.type==='pump'){ sp.textContent=r.done?`${reqLabel(r)} · set`:`${reqLabel(r)} · set the pump:`; if(!r.done) for(let n=1;n<=4;n++){ const b=document.createElement('button'); b.textContent='P'+n; b.onclick=()=>{ if(n===r.pump){ r.done=true; sfx.beep(); reg.msg='That\'s the one.'; } else { reg.msg=`No, pump ${NUM[r.pump]}.`; sfx.click(); } renderReg(); }; li.appendChild(b); } }
+    else if(r.type==='fake'){ sp.textContent=`${r.name} · not in the system`; }
+    else sp.textContent = r.done? `${reqLabel(r)} · ${fmt$(reqPrice(r))}` : `${reqLabel(r)} · ${r.type==='cig'?'get it from the cigarette wall behind you':r.type==='coffee'?'pour it at the coffee station':'grab one from the roller'}`;
+    rl.appendChild(li); });
+  const total=regTotal(c); $('#regTotal').textContent=fmt$(total);
+  const ready=regReady(c);
+  if(ready && !reg.paid){ const bills=[5,10,20,50,100]; reg.paid = Math.random()<.25? total : bills.find(b=>b>=total)||total; if(reg.paid!==total) reg.msg=`Here's ${fmt$(reg.paid)}.`; }
+  $('#regPaid').textContent=reg.paid?fmt$(reg.paid):'-'; const due=reg.paid?r2(reg.paid-total):null; $('#regDue').textContent=due===null?'-':fmt$(due);
+  $('#regGive').textContent=fmt$(reg.give);
+  const coins=$('#regCoins'); coins.innerHTML='';
+  [[10,'$10'],[5,'$5'],[1,'$1'],[.25,'25¢'],[.1,'10¢'],[.05,'5¢'],[.01,'1¢']].forEach(([v,l])=>{ const b=document.createElement('button'); b.textContent='+'+l; b.disabled=!reg.paid; b.onclick=()=>{ reg.give=r2(reg.give+v); sfx.click(); renderReg(); }; coins.appendChild(b); });
+  const cl=document.createElement('button'); cl.textContent='Clear'; cl.onclick=()=>{ reg.give=0; renderReg(); }; coins.appendChild(cl);
+  $('#regDone').disabled=!ready;
+  $('#regAway').hidden=c.reqs.every(r=>r.done||r.type==='pump');
+}
+$('#regDone').onclick=async()=>{ if(!reg) return; const c=reg.c; if(!regReady(c)) return;
+  const due=r2(reg.paid-regTotal(c)), diff=r2(reg.give-due);
+  closeRegister(true);
+  if(c.fake){ await servedFake(c); return; }
+  tutorialServed=true;
+  servedLooks.push(c.look);
+  if(Math.abs(diff)>.004){ money-=Math.abs(diff)+5; say('Customer',diff<0?'Hey. You shorted me.':'...You gave me too much. Not my problem.',{d:3}); toast(`Wrong change (-${fmt$(Math.abs(diff)+5)})`,3); }
+  else { money+=2; toast('Sale complete. Tip (+$2.00)',2.5); }
+  sfx.beep(); updatePay(); sendAway(c,false);
+};
+$('#regAway').onclick=()=>closeRegister(true);
+$('#regRefuse').onclick=()=>{ if(!reg) return; const c=reg.c; closeRegister(true);
+  if(c.fake){ money+=10; updatePay(); sendAway(c,true); toast('It stopped smiling and walked into the back room. (+$10)',4); }
+  else { money-=15; updatePay(); sendAway(c,false); say('Customer','Unbelievable.',{d:2}); toast('You refused a real customer. Complaint (-$15)',4); }
+};
+async function servedFake(c){
+  busy=true; hush(1.5); await wait(1.2); grid.flick=.5; await wait(.6); disposeCustomer(c); grid.flick=0; busy=false;
+  await strikeEvent('You served something that was not a customer.');
+}
+function setHold(h){ player.holding=h; for(const k in holdMeshes) holdMeshes[k].visible=false; if(h){ const m=holdMeshes[h.type==='cig'?'cig'+h.brand:h.type]; if(m) m.visible=true; } $('#hold').textContent=h?`Holding: ${reqLabel(h.type==='cig'?{type:'cig',brand:h.brand}:{type:h.type})} · bring it to the register`:''; }
+const holdMeshes={};
+CIGS.forEach((_,b)=>{ const m=new THREE.Mesh(G.cig,MAT.cig[b]); m.position.set(.2,-.25,-.42); m.rotation.set(.3,-.4,0); m.visible=false; camera.add(m); holdMeshes['cig'+b]=m; });
+{ const cupG=latheUV([[0,0],[.035,0],[.045,.12],[.047,.125],[0,.125]],16); const cup=new THREE.Mesh(cupG,std({color:0xf4f1ea,roughness:.6})); const lid=new THREE.Mesh(new THREE.CylinderGeometry(.048,.048,.01,16),M.black); lid.position.y=.128; cup.add(lid); cup.position.set(.2,-.3,-.45); cup.visible=false; camera.add(cup); holdMeshes.coffee=cup;
+  const dog=new THREE.Group(); const bun=new THREE.Mesh(new THREE.CapsuleGeometry(.024,.12,4,8),std({color:0xd9a65a,roughness:.8})); bun.rotation.z=Math.PI/2; dog.add(bun); const hd=new THREE.Mesh(new THREE.CapsuleGeometry(.014,.14,4,8),hotdogMat); hd.rotation.z=Math.PI/2; hd.position.y=.02; dog.add(hd); dog.position.set(.2,-.28,-.42); dog.rotation.y=.4; dog.visible=false; camera.add(dog); holdMeshes.hotdog=dog; }
 
 /* ============================== GAME FLOW ============================== */
-let hour=0, busy=false, logging=false, nightResets=0, lastId=null;
+const HOUR_SECONDS=210;
+let hour=0, minute=0, timerOn=false, busy=false, logging=false, money=0, strikes=0, nightResets=0, lastId=null, anomStreak=0, clearStreak=0, eventsThisNight=0, warned50=false;
+let hourEvent=null, backDark=false, outsideT=0, backT=0, hushT=0;
 const found=new Set(); let foundAll=new Set();
 try{ foundAll=new Set(JSON.parse(localStorage.getItem('kc-found')||'[]')); }catch(_){}
 function saveFound(){ try{ localStorage.setItem('kc-found',JSON.stringify([...foundAll])); }catch(_){} $('#foundTitle').textContent=`${foundAll.size} / ${A.length}`; }
 saveFound();
 const fmtHour = h => `${h===0?12:h}:00 AM`;
-function setClock(){ UI.clock.textContent=fmtHour(hour); UI.pips.forEach((p,i)=>p.classList.toggle('on',i<hour)); }
-function renderFound(el){ const list=A.filter(a=>foundAll.has(a.id)); el.innerHTML=`<b>ANOMALIES FOUND · ${foundAll.size} / ${A.length}</b><br>`+(list.length?list.map(a=>'· '+a.desc.replace(/</g,'')).join('<br>'):'None yet.'); }
+function setClock(){ const m=Math.min(59,Math.floor(minute)); UI.clock.textContent=`${hour===0?12:hour}:${String(m).padStart(2,'0')} AM`; UI.clock.classList.toggle('late',minute>=50); UI.pips.forEach((p,i)=>p.classList.toggle('on',i<hour)); }
+function updatePay(){ const p=$('#pay'); p.firstChild.nodeValue=fmt$(money)+' '; [...p.querySelectorAll('i')].forEach((x,i)=>x.classList.toggle('on',i<strikes)); }
+function renderFound(el){ const list=A.filter(a=>foundAll.has(a.id)); el.innerHTML=`<b>ANOMALIES FOUND · ${foundAll.size} / ${A.length}</b><br>`+(list.length?list.map(a=>'· '+a.desc).join('<br>'):'None yet.'); }
+function hush(s){ hushT=Math.max(hushT,s); }
 function setupHour(first){
-  resetWorld(); current=null;
-  if(!first){ const pool=A.filter(a=>a.id!==lastId); const fresh=pool.filter(a=>!found.has(a.id)); if(Math.random()<.7){ current=rpick(fresh.length?fresh:pool); current.apply(); lastId=current.id; } }
+  resetWorld(); clearCustomers(); setHold(null); current=null; minute=0; warned50=false; outsideT=0; backT=0;
+  if(!first){
+    let p=.42; if(anomStreak>=2) p=0; else if(clearStreak>=2) p=.62;
+    if(Math.random()<p){ const maxTier=hour<=1?1:hour<=2?2:3; const pool=A.filter(a=>a.tier<=maxTier&&a.id!==lastId&&(!a.hostile||hour>=3)); const fresh=pool.filter(a=>!found.has(a.id)); current=rpick(fresh.length?fresh:pool); current.apply(); lastId=current.id; anomStreak++; clearStreak=0; }
+    else { anomStreak=0; clearStreak++; }
+  }
+  backDark=!first&&hour>=2&&Math.random()<.5; if(backDark) grid.off.add('back');
+  const n=first?1:1+Math.floor(Math.random()*2)+(hour>=3?1:0);
+  custPlan=[]; for(let i=0;i<n;i++) custPlan.push(4+i*(38/n)+Math.random()*8);
+  hourEvent=null;
+  if(!first&&hour>=2&&eventsThisNight<2&&!(current&&(current.hostile||current.id==='office'))&&Math.random()<(hour>=4?.35:.22)){ hourEvent={type:hour>=3&&Math.random()<.45?'still':'blackout',at:16+Math.random()*22,started:false}; eventsThisNight++; }
   player.pos.set(START.x,0,START.z); player.yaw=START.yaw; player.pitch=-.05; player.lastZ=player.pos.z;
-  setClock(); clearObj();
+  setClock(); updatePay(); clearObj();
   obj('walk','Walk the store: aisles, coolers, back room, office, and the lot outside');
-  obj('log','Log the hour at the register: ALL CLEAR or REPORT');
+  obj('log','Log the hour in the logbook by the register before :59');
 }
 async function logPrompt(){
-  if(busy||logging) return; logging=true;
-  UI.who.textContent=''; const c=await choose([`ALL CLEAR · nothing is different`,`REPORT · something is wrong`,'Keep looking']); logging=false;
-  if(c===2 || busy) return;
-  const report=c===1, had=!!current, correct=report===had;
-  if(correct && had){ found.add(current.id); foundAll.add(current.id); saveFound(); }
-  let msg=null;
-  if(correct) msg = had? `Reported. ${current.desc}` : null;
-  else msg = had? `You missed it. ${current.desc}` : 'There was nothing wrong. You reported a normal hour.';
+  if(busy||logging||uiOpen) return; logging=true;
+  const c=await choose(['ALL CLEAR · nothing is different','REPORT · something is wrong','Keep looking']);
+  if(c===2||busy){ logging=false; return; }
+  let area=null;
+  if(c===1){ const a=await choose([...AREAS.map(x=>x[1]),'Back']); if(a===AREAS.length||busy){ logging=false; return; } area=AREAS[a][0]; }
+  logging=false;
+  const had=!!current; let correct, msg=null;
+  if(!had){ correct=c===0; if(!correct) msg='Nothing was wrong this hour.'; }
+  else if(c===0){ correct=false; msg=`You missed it. ${current.desc}`; }
+  else { correct=current.areas.includes(area); msg=correct?`Reported. ${current.desc}`:`Right hour, wrong place. ${current.desc}`; }
+  if(correct&&had){ found.add(current.id); foundAll.add(current.id); saveFound(); }
   sfx[correct?'logGood':'reset']();
-  await endHour(correct,msg);
+  await endHour(correct?'correct':'wrong',msg);
 }
-async function fail(msg){ if(busy) return; busy=true; cancelChoice(); await jumpscare(); busy=false; await endHour(false,msg,true); }
-async function endHour(correct,msg,already){
-  busy=true; player.canMove=false; cancelChoice();
+async function endHour(result,msg,already){
+  busy=true; player.canMove=false; cancelChoice(); closeRegister(false); closeNote(); endEvent(true);
   if(!already) await fade(1,1.1);
-  UI.hud.classList.add('off');
-  if(correct) hour++; else { hour=0; nightResets++; found.clear(); }
-  if(hour>=6) return win();
-  const lines=[]; if(msg) lines.push(msg); if(!correct) lines.push('The register clock read 12:00 AM again. The night had started over.');
-  lines.push({big:fmtHour(hour),small:correct?`${6-hour} hour${6-hour>1?'s':''} until the day shift`:'Back to the start',hold:2.6});
-  setupHour(false);
+  UI.hud.classList.add('off'); W.silence=false; hushT=0;
+  const lines=[]; if(msg) lines.push(msg);
+  if(result==='correct'){ money+=12; lines.push(`Logged. +$12.00 for the hour.`); }
+  else if(result!=='fired'){ strikes++; money-=10; lines.push(result==='timeout'?`You never logged the hour. Strike ${strikes} of 3.`:`Strike ${strikes} of 3.`); }
+  if(strikes>=3){
+    lines.push('At ten after, the store phone rang. It was Ray.','"Go home, Sam. Come back tomorrow night and try again."');
+    nightResets++; hour=0; strikes=0; money=0; found.clear(); eventsThisNight=0; servedLooks=[]; anomStreak=0; clearStreak=0;
+    lines.push({big:'12:00 AM',small:'The night starts over',hold:2.6});
+  } else {
+    hour++; if(hour>=6) return win();
+    lines.push({big:fmtHour(hour),small:`${6-hour} hour${6-hour>1?'s':''} until the day shift · ${fmt$(money)}`,hold:2.6});
+  }
+  setupHour(false); timerOn=true;
   await cards(lines,3.4);
   UI.hud.classList.remove('off'); grade.uniforms.uRed.value=0; await fade(0,1.1); busy=false; player.canMove=true;
 }
@@ -1176,108 +1431,247 @@ async function jumpscare(){
   sfx.scare(); player.shake=2; grade.uniforms.uRed.value=.6;
   await wait(1.0); UI.fade.style.transition='none'; UI.fade.style.opacity=1; scareLight.intensity=0; man.g.visible=false; await wait(.8);
 }
+// A broken rule: scare, strike, money lost. The hour keeps going (unless it was the third strike).
+async function strikeEvent(msg){
+  if(busy) return; busy=true; cancelChoice(); closeRegister(false); await jumpscare();
+  strikes++; money-=15; updatePay(); endEvent(true);
+  if(strikes>=3){ busy=false; return endHour('fired',msg,true); }
+  UI.hud.classList.add('off'); await cards([msg,`Strike ${strikes} of 3. (-$15)`],3.2);
+  player.pos.set(START.x,0,START.z); player.yaw=START.yaw; player.pitch=-.05; grade.uniforms.uRed.value=0;
+  UI.hud.classList.remove('off'); await fade(0,1.1); busy=false; player.canMove=true;
+}
+// A risk that went wrong: no strike and no lost progress, just money and time.
+async function blackOut(msg){
+  if(busy) return; busy=true; cancelChoice(); closeRegister(false); hush(1); await wait(.4); await jumpscare();
+  money-=15; minute=Math.min(57,minute+10); updatePay(); setClock(); outsideT=0; backT=0;
+  UI.hud.classList.add('off'); await cards([msg,'When you came to, you were behind the counter. Ten minutes were gone. (-$15)'],3.4);
+  player.pos.set(START.x,0,START.z); player.yaw=START.yaw; player.pitch=-.05; grade.uniforms.uRed.value=0;
+  UI.hud.classList.remove('off'); await fade(0,1.1); busy=false; player.canMove=true;
+}
 async function win(){
-  state='end'; resetWorld(); setClock(); UI.clock.textContent='6:00 AM';
+  state='end'; resetWorld(); clearCustomers(); UI.clock.textContent='6:00 AM';
   skyU.uDawn.value=1; scene.fog.color.setHex(0x5a5f6a); scene.background.setHex(0x5a5f6a); hemi.intensity=1.1; dawnSun.intensity=1.6; rainMat.uniforms.uCol.value.setRGB(.8,.82,.86);
   player.pos.set(START.x,0,START.z); player.yaw=START.yaw; player.pitch=0;
   await cards([{big:'6:00 AM',small:'The day shift is here',hold:3}],3);
   UI.hud.classList.add('off'); await fade(0,2); await wait(5); await fade(1,2.5);
-  await cards(['At 6:02 AM, Dolores from the day shift unlocked the front door and asked why I looked like I had seen a ghost.','I told her it was a long night. I never told her about the rest.',`I started the night over ${nightResets} time${nightResets===1?'':'s'}.`,'Ray didn\'t ask how it went. He just asked if I could work Saturday.'],4.2);
-  $('#endSub').textContent=`You made it to morning. Anomalies found across all nights: ${foundAll.size} of ${A.length}.`; renderFound($('#foundEnd')); $('#end').hidden=false; document.exitPointerLock?.();
+  await cards(['At 6:02 AM, Dolores from the day shift unlocked the front door and asked why I looked like I had seen a ghost.','I told her it was a long night. I never told her about the rest.',`I took home ${fmt$(money)}. I started the night over ${nightResets} time${nightResets===1?'':'s'}.`,'Ray didn\'t ask how it went. He just asked if I could work Saturday.'],4.2);
+  $('#endSub').textContent=`You made it to morning with ${fmt$(money)} and ${strikes} strike${strikes===1?'':'s'}. Anomalies found across all nights: ${foundAll.size} of ${A.length}.`; renderFound($('#foundEnd')); $('#end').hidden=false; document.exitPointerLock?.();
 }
 
-/* persistent interactables */
-addIA('register',register,'Log the hour',()=>logPrompt(),()=>state==='play'&&!busy&&!logging);
+/* ============================== HIDING EVENTS ============================== */
+let evKnockT=0, stillPos=null, evStepT=0;
+function startEvent(e){
+  e.started=true; e.phase='intro'; e.t=1.6; hush(2);
+  closeRegister(false); for(const c of customers) disposeCustomer(c); customers.length=0; custPlan=custPlan.filter(m=>m>e.at+6);
+}
+function endEvent(silent){
+  const e=hourEvent; if(!e||!e.started||e.phase==='done') return; e.phase='done'; grid.on=true; W.silence=false; man.g.visible=false; man.mode='hidden'; officeDoor.shake=0; targetTension=0;
+  done('hide'); if(!silent){ money+=10; updatePay(); toast('It passed. Hazard pay (+$10)',4); }
+}
+function updateEvent(dt){
+  const e=hourEvent; if(!e||busy||uiOpen||state!=='play') return;
+  if(!e.started){ if(timerOn&&minute>=e.at&&!customers.some(c=>c.state==='serving')) startEvent(e); return; }
+  if(e.phase==='done') return;
+  e.t-=dt;
+  if(e.type==='blackout'){
+    if(e.phase==='intro'&&e.t<=0){ sfx.dead(); grid.on=false; e.phase='run'; e.t=16; obj('hide','The lights went out. Get in the office and shut the door',true); targetTension=1; }
+    else if(e.phase==='run'){
+      evKnockT-=dt; if(evKnockT<=0){ evKnockT=1.1; sfx.glass(); const x=clamp(player.pos.x,-8,8); manPlace(man.g,x,9.3,Math.PI); man.mode='still'; }
+      if(inOffice()&&officeDoor.angle<.25){ e.phase='hold'; e.t=18; man.g.visible=false; obj('hide','Stay in the office until the lights come back on',true); }
+      else if(e.t<=0) strikeEvent('Something came in out of the dark before you made it to the office.');
+    } else if(e.phase==='hold'){
+      evKnockT-=dt; if(evKnockT<=0){ evKnockT=1.4+Math.random()*1.6; sfx.bang(); officeDoor.shake=.06; setTimeout(()=>officeDoor.shake=0,300); player.shake=.25; }
+      if(!inOffice()||officeDoor.target>.3) strikeEvent('You opened the door before the lights came back.');
+      else if(e.t<=0){ sfx.breaker(); endEvent(false); }
+    }
+  } else if(e.type==='still'){
+    if(e.phase==='intro'&&e.t<=0){ W.silence=true; e.phase='hold'; e.t=14; stillPos=player.pos.clone(); obj('hide','Everything went quiet. Don\'t move',true); targetTension=.9; const fw=new V3(-Math.sin(player.yaw),0,-Math.cos(player.yaw)); manPlace(man.g,player.pos.x-fw.x*1.6,player.pos.z-fw.z*1.6,player.yaw); man.mode='still'; }
+    else if(e.phase==='hold'){
+      evStepT-=dt; if(evStepT<=0){ evStepT=.7; sfx.step(false,.6); }
+      if(player.pos.distanceTo(stillPos)>.12) strikeEvent('You moved.');
+      else if(e.t<=0){ endEvent(false); }
+    }
+  }
+}
+
+/* ============================== INTERACTABLES ============================== */
+const ghost=new THREE.MeshBasicMaterial({visible:false});
+const logbook=new THREE.Group(); logbook.position.set(-6.9,1.025,5.1); logbook.rotation.y=-.2; scene.add(logbook);
+box(.24,.012,.32,std({color:0x6a4a2a,roughness:.7}),0,.006,0,{parent:logbook,uv:0}); box(.21,.004,.27,lit(T.rules,{r:.9}),0,.014,.01,{parent:logbook,uv:0}); box(.1,.02,.03,M.steel,0,.02,-.14,{parent:logbook,uv:0});
+const inCashier=()=>player.pos.x<-6.6&&player.pos.z>1.3&&player.pos.z<7.8;
+addIA('logbook',logbook,()=>`Log ${fmtHour(hour)}`,()=>logPrompt(),()=>state==='play'&&!busy&&!logging);
+addIA('register',register,'Ring up the customer',()=>openRegister(),()=>state==='play'&&!busy&&inCashier()&&customers.some(c=>c.state==='waiting'));
 addIA('note',rulesNote,'Read Ray\'s rules',()=>openNote());
-addIA('backdoor',backDoor.panel,()=>backDoor.target>.3?'Close door':'Open door',()=>{ if(backDoor.target>.3){ backDoor.target=0; sfx.slam(); } else { if(W.knock){ backDoor.target=.9; fail('Someone was knocking on the back door. You opened it.'); return; } backDoor.target=backDoor.openAngle; sfx.creak(); } });
+CIGS.concat(['RANGER']).forEach((name,i)=>{ const b=box(.12,1.1,.6,ghost,-9.66,1.66,4.05+i*.6+.25,{uv:0}); addIA('cig'+i,b,`Take a pack of ${name}`,()=>{ setHold({type:'cig',brand:i%4}); sfx.rustle(); },()=>state==='play'&&!busy); });
+addIA('coffee',box(.5,.6,.5,ghost,9.6,1.3,-2.3,{uv:0}),'Pour a large coffee',()=>{ setHold({type:'coffee'}); burst2(1.2,{f:600,q:.5,gain:.15,a:.1}); },()=>state==='play'&&!busy);
+addIA('hotdog',box(.5,.3,.6,ghost,9.55,1.12,-.35,{uv:0}),'Grab a hot dog',()=>{ if(!hotdogs[0].visible){ toast('The roller is empty.',2); return; } setHold({type:'hotdog'}); sfx.rustle(); },()=>state==='play'&&!busy);
+addIA('backdoor',backDoor.panel,()=>backDoor.target>.3?'Close door':'Open door',()=>{ if(backDoor.target>.3){ backDoor.target=0; sfx.slam(); } else { if(W.knock){ backDoor.target=.9; W.knock=false; strikeEvent('Someone was knocking on the back door. You opened it.'); return; } backDoor.target=backDoor.openAngle; sfx.creak(); } });
 addIA('officedoor',officeDoor.panel,()=>officeDoor.locked?'Locked':(officeDoor.target>.5?'Close door':'Open door'),()=>{ if(officeDoor.locked){ sfx.thud(.3); toast('It\'s locked. It\'s never locked.',2.5); return; } officeDoor.target=officeDoor.target>.5?0:officeDoor.openAngle; officeDoor.target?sfx.creak():sfx.thud(.4); });
 addIA('poster',missingPoster,'Read poster',()=>{ inner(posterMat.map===T.missingSam?'That\'s... me.':'"MISSING. Carla Wren, 22. Last seen September 2nd, Route 41."'); });
+// radio on the back counter
+const radio=new THREE.Group(); radio.position.set(-7.05,1.025,6.55); radio.rotation.y=Math.PI/2; scene.add(radio);
+{ box(.34,.18,.12,std({color:0x2a2622,roughness:.5}),0,.09,0,{parent:radio,uv:0,cast:true}); mesh(new THREE.CircleGeometry(.055,20),std({color:0x111,roughness:.9}),-.09,.09,.061,{parent:radio}); box(.12,.05,.005,glow(null,0xffb35a,.6),.07,.12,.061,{parent:radio,uv:0}); mesh(new THREE.CylinderGeometry(.004,.004,.4,6),M.steel,.14,.36,-.03,{parent:radio,rz:-.3}); }
+let radioOn=true;
+addIA('radio',radio,()=>radioOn?'Turn the radio off':'Turn the radio on',()=>{ radioOn=!radioOn; sfx.click(); });
 function openNote(){ noteOpen=true; UI.note.hidden=false; sfx.rustle(); }
 function closeNote(){ if(!noteOpen) return; noteOpen=false; UI.note.hidden=true; sfx.rustle(); }
 
 async function firstNight(){
-  hour=0; setupHour(true); clearObj(); UI.hud.classList.remove('off');
+  hour=0; money=0; strikes=0; setupHour(true); timerOn=false; clearObj(); UI.hud.classList.remove('off');
   fade(0,3); await wait(2);
   toast('WASD move · Shift run · E interact · F flashlight · R rules',6);
   await inner('First night on my own. Ray left his rules on the counter.');
   obj('rules','Read Ray\'s rules on the counter');
   await until(()=>noteOpen); await until(()=>!noteOpen); done('rules');
   await inner('...Is this a joke?');
-  await inner('Fine. Learn the store. Every shelf, every cooler. Then log the hour.');
+  await inner('Fine. Learn the store. Every shelf, every cooler. Then log the hour before it runs out.');
+  timerOn=true;
   obj('walk','Walk the store: aisles, coolers, back room, office, and the lot outside');
-  obj('log','Log the hour at the register: ALL CLEAR or REPORT');
+  obj('log','Log the hour in the logbook by the register before :59');
 }
+
+/* ============================== RADIO, TRUCKS & AMBIENCE ============================== */
+const RADIO_LINES=[
+  ['WKCR 98.1, overnight on the ridge. Rain all night, folks.','Kettle Kitchen soup. Just like Mom used to make.','Quarter past midnight. Keep it here till sunup.'],
+  ['Big Buck Cola. Ice cold. Taste the red.','The Sheriff reminds drivers that Route 41 is slick tonight. Take it slow.','That was an old one. Here\'s another old one.'],
+  ['Hollow Pine chips. Made from real hollow pines.','If you see someone walking on 41 tonight, don\'t stop for them. They aren\'t hitchhiking.','Kettle Creek Gas and Go. Open twenty-four hours. Open forever.'],
+  ['We\'ve had some calls about the gas station out on 41.','Folks say the lights are on, but there\'s nobody behind the counter.','Big Buck Cola. Taste the red. Taste it.'],
+  ['This next one goes out to Sam, working the overnight.','Sam, you\'re doing real good. Keep checking the aisles.','Don\'t look at the windows for a while, Sam.'],
+  ['WKCR is now going off the air.','...','Six o\'clock comes for everybody, Sam.'],
+];
+let radioT=6, radioI=0, radioShowT=0, radioSpeak=0;
+function updateRadio(dt){
+  const near=radioOn&&grid.on&&player.inside&&!W.silence&&state==='play'&&Math.hypot(player.pos.x+7,player.pos.z-6.5)<11;
+  radioT-=dt; radioShowT-=dt; radioSpeak=Math.max(0,radioSpeak-dt);
+  if(radioT<=0){ radioT=24+Math.random()*14; const L=RADIO_LINES[Math.min(hour,5)]; const line=L[radioI++%L.length]; if(near){ $('#radio').innerHTML='<b>RADIO · WKCR 98.1</b>'; $('#radio').append(line); $('#radio').classList.add('on'); radioShowT=7; radioSpeak=Math.min(6,1+line.length*.06); } }
+  if(radioShowT<=0||!near) $('#radio').classList.remove('on');
+}
+const truck={g:new THREE.Group(),on:false,x:0,dir:1,t:20};
+{ const g=truck.g; box(2.4,2.6,2.3,std({color:0x7a1f1a,roughness:.5,metalness:.3}),0,1.7,0,{parent:g,uv:0}); box(9,3.2,2.5,std({color:0xc9c4b8,roughness:.6}),-5.9,2.0,0,{parent:g,uv:0}); for(const z of [-.8,.8]) box(.06,.2,.3,glow(null,0xfff2d8,4),1.22,.9,z,{parent:g,uv:0}); for(let i=0;i<6;i++) box(.06,.08,.08,glow(null,0xffa020,2),-1.2-i*1.6,3.62,1.26,{parent:g,uv:0});
+  truck.beam=new THREE.SpotLight(0xfff0d0,0,60,.5,.6,1.4); truck.beam.position.set(1.3,1,0); truck.beam.target.position.set(20,0,0); g.add(truck.beam,truck.beam.target); g.visible=false; scene.add(g); }
+function updateTruck(dt){
+  if(!truck.on){ truck.t-=dt; if(truck.t<=0&&skyU.uDawn.value<.5){ truck.on=true; truck.dir=Math.random()<.5?1:-1; truck.x=-170*truck.dir; truck.g.visible=true; truck.g.rotation.y=truck.dir>0?0:Math.PI; truck.g.position.set(truck.x,0,truck.dir>0?32.1:28.9); } return; }
+  truck.x+=truck.dir*24*dt; truck.g.position.x=truck.x; truck.beam.intensity=W.silence?0:180;
+  if(Math.abs(truck.x)>175){ truck.on=false; truck.g.visible=false; truck.beam.intensity=0; truck.t=45+Math.random()*60; }
+}
+let compOn=true, compT=40;
+const BUZZ=new V3(6,H-.1,-.5);
 
 /* ============================== INTERACTION + LIGHTS + AUDIO LOOP ============================== */
 const ray=new THREE.Raycaster(); ray.far=2.4; const center=new THREE.Vector2(); let currentIA=null;
 function updateInteract(){
-  currentIA=null; if(!player.canMove||noteOpen){ UI.prompt.classList.remove('on'); UI.cross.classList.remove('on'); return; }
+  currentIA=null; if(!player.canMove||noteOpen||uiOpen){ UI.prompt.classList.remove('on'); UI.cross.classList.remove('on'); return; }
   ray.setFromCamera(center,camera); const hits=ray.intersectObjects(rayTargets,true);
   for(const h of hits){ let o=h.object, ia=null; while(o&&!ia){ ia=o.userData.ia; o=o.parent; } if(ia){ const lab=iaLabel(ia); if(lab){ currentIA=ia; UI.promptT.textContent=lab; } } break; }
   UI.prompt.classList.toggle('on',!!currentIA); UI.cross.classList.toggle('on',!!currentIA);
 }
-function interact(){ if(noteOpen){ closeNote(); return; } if(currentIA && state==='play' && !paused) currentIA.action(); }
+function interact(){ if(noteOpen){ closeNote(); return; } if(currentIA&&state==='play'&&!paused&&!uiOpen) currentIA.action(); }
 let knockT=3, hookT=0, angelStep=0;
+function updateHour(dt){
+  if(state!=='play'||busy) return;
+  if(timerOn&&!uiOpen){ minute+=dt*60/HOUR_SECONDS; }
+  if(timerOn&&minute>=50&&!warned50){ warned50=true; toast('Ten minutes left to log the hour.',4); sfx.beep(); }
+  if(timerOn&&minute>=60){ endHour('timeout','The hour ran out before you logged it.'); return; }
+  setClock();
+  if(custPlan.length&&minute>=custPlan[0]&&!customers.length&&!(hourEvent&&hourEvent.started&&hourEvent.phase!=='done')){ custPlan.shift(); spawnCustomer(); }
+  // risky places: no strike, but they cost you
+  if(hour>0||timerOn){
+    if(!player.inside){ outsideT+=dt; if(outsideT>30&&outsideT-dt<=30) toast('You feel like something in the trees is watching you.',4); if(outsideT>45) blackOut('Something came out of the trees.'); } else outsideT=0;
+    const inBack=player.pos.x>3&&player.pos.z<-3.1&&player.pos.z>-8;
+    if(inBack&&backDark&&!player.flash){ backT+=dt; } else if(inBack&&backDark){ backT+=dt*.5; } else backT=0;
+    if(backT>10&&backT-dt<=10) toast('Something is breathing back here.',3.5);
+    if(backT>18) blackOut('Something in the dark back room grabbed you.');
+  }
+}
 function updateAnomalies(dt){
-  // clock hands
-  const mins = W.clockDir>0 ? (gt/600*60)%60 : (wallClock.mins??0)+dt*W.clockDir; wallClock.mins=mins;
-  wallClock.mh.rotation.z=-mins/60*Math.PI*2; wallClock.hh.rotation.z=-((hour%12)+mins/60)/12*Math.PI*2;
+  const mins = W.clockFixed!==null ? W.clockFixed%60 : W.clockDir>0 ? minute%60 : (wallClock.mins??0)+dt*W.clockDir; wallClock.mins=mins;
+  const hrs = W.clockFixed!==null ? Math.floor(W.clockFixed/60) : hour;
+  wallClock.mh.rotation.z=-mins/60*Math.PI*2; wallClock.hh.rotation.z=-((hrs%12)+mins/60)/12*Math.PI*2;
   if(W.float){ for(const r of PRODUCTS) if(r.tag.door===2){ const k=r.base.elements[12]*7+r.base.elements[13]*3; _m.makeTranslation(0,.06+Math.sin(gt*1.3+k)*.03,0).multiply(r.base); setRec(r,_m); r.dirty=true; } }
-  if(W.armSway){ ceilingArm.children.forEach((c,i)=>{ if(i) c.rotation.z=Math.sin(gt*.7)*.04; }); ceilingArm.rotation.z=Math.sin(gt*.6)*.05; }
+  if(W.armSway){ ceilingArm.rotation.z=Math.sin(gt*.6)*.05; }
   if(W.phoneOff){ hookT-=dt; if(hookT<=0){ hookT=.3; const d=Math.hypot(player.pos.x+9.8,player.pos.z-2.4); if(d<9) sfx.offhook(clamp(1-d/9,0,1)); } }
-  if(W.knock && state==='play' && !busy){ knockT-=dt; if(knockT<=0){ knockT=4+Math.random()*3; const d=Math.hypot(player.pos.x-7.5,player.pos.z+8); sfx.knock(clamp(1.2-d/18,.15,1)); backDoor.shake=.04; setTimeout(()=>backDoor.shake=0,900); } }
+  if(W.knock&&state==='play'&&!busy){ knockT-=dt; if(knockT<=0){ knockT=4+Math.random()*3; const d=Math.hypot(player.pos.x-7.5,player.pos.z+8); sfx.knock(clamp(1.2-d/18,.15,1)); backDoor.shake=.04; setTimeout(()=>backDoor.shake=0,900); } }
   if(man.mode==='still'||man.mode==='angel'){ const g=man.g; const dx=player.pos.x-g.position.x, dz=player.pos.z-g.position.z; g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(dx,dz),dt*2); animMan(g,0,false); }
-  if(W.angel && state==='play' && !busy && man.g.visible){
+  if(W.angel&&state==='play'&&!busy&&man.g.visible){
     const g=man.g; const to=new V3(g.position.x-camera.position.x,1.4-camera.position.y,g.position.z-camera.position.z); const dist=Math.hypot(to.x,to.z); to.normalize(); const fw=new V3(); camera.getWorldDirection(fw);
-    const watched = fw.dot(to)>.55;
-    if(!watched && dist>.8){ const step=1.9*dt; g.position.x-=to.x/Math.hypot(to.x,to.z)*step; g.position.z-=to.z/Math.hypot(to.x,to.z)*step; resolve(g.position,.28); angelStep+=step; if(angelStep>.7){ angelStep=0; sfx.step(false,clamp(1.4-dist/10,.2,1)); } }
+    const watched=fw.dot(to)>.55;
+    if(!watched&&dist>.8){ const step=1.9*dt, l=Math.hypot(to.x,to.z); g.position.x-=to.x/l*step; g.position.z-=to.z/l*step; resolve(g.position,.28); angelStep+=step; if(angelStep>.7){ angelStep=0; sfx.step(false,clamp(1.4-dist/10,.2,1)); } }
     targetTension=clamp(1.2-dist/8,.4,1);
-    if(dist<.9) fail('Someone was standing in the aisle. Every time you looked away, he got closer.');
+    if(dist<.9){ W.angel=false; strikeEvent('You looked away from the man in the aisle. He was right behind you.').then(()=>{ man.g.visible=false; man.mode='hidden'; }); }
   }
 }
 function strike(delay=.6){ lightning=1; sfx.thunder(delay); }
 function updateLights(dt){
-  let gf = grid.on?1:0;
-  if(grid.on && grid.flick>0) gf = Math.random()<grid.flick? .05+Math.random()*.4 : 1;
-  for(const it of grid.items){ let f=it.zone==='in'?gf:1; if(grid.off.has(it.zone)) f=0; if(it.l===Lback||it.m===backPanel){ f*=(Math.sin(gt*37)*Math.sin(gt*3.1)>.93||Math.random()<.01)?.2:1; }
+  let gf=grid.on?1:0;
+  if(grid.on&&grid.flick>0) gf=Math.random()<grid.flick?.05+Math.random()*.4:1;
+  for(const it of grid.items){ let f=it.zone==='in'||it.zone==='back'?gf:1; if(grid.off.has(it.zone)) f=0;
+    if(it.m===buzzPanel&&grid.on) f*=(Math.sin(gt*23)*Math.sin(gt*2.3)>.9||Math.random()<.03)?.15:1;
+    if((it.l===Lback||it.m===backPanel)&&grid.on&&!grid.off.has('back')) f*=(Math.sin(gt*37)*Math.sin(gt*3.1)>.93||Math.random()<.01)?.2:1;
+    if(it.zone==='out'||it.zone==='canopy'){ if(!grid.on) f=0; }
     if(it.l) it.l.intensity=it.base*f; else it.m.emissiveIntensity=it.base*f; }
   lightning=Math.max(0,lightning-dt*2.4); const lf=lightning>0?(Math.sin(lightning*40)>0?lightning:lightning*.3):0;
   bolt.intensity=lf*6; skyU.uFlash.value=lf*.8; if(skyU.uDawn.value<.5) rainMat.uniforms.uCol.value.setRGB(.55+lf,.6+lf,.7+lf);
   flash.intensity=player.flash?16:0;
   const L=car.lights?1:0; car.headMat.emissiveIntensity=lerp(car.headMat.emissiveIntensity,L*3.5,.2); car.tailMat.emissiveIntensity=lerp(car.tailMat.emissiveIntensity,L*2.5,.2); car.beam.intensity=lerp(car.beam.intensity,L*260,.2);
 }
-function updateAudio(){
+function updateAudio(dt){
   if(!AU.ctx) return; const C=AU.ctx, now=C.currentTime; const out=!player.inside;
+  hushT=Math.max(0,hushT-dt); const duck=(W.silence||hushT>0)?0:1;
   const nearOpen=(Math.hypot(player.pos.x-7.5,player.pos.z+8)<4&&backDoor.angle>.3)||(Math.hypot(player.pos.x-2.8,player.pos.z-8)<5);
-  const rv=state==='title'?.5:out?.55:nearOpen?.32:.16;
+  const rv=(state==='title'?.5:out?.55:nearOpen?.32:.16)*duck;
   AU.rain.g.gain.setTargetAtTime(rv,now,.3); AU.rainHi.g.gain.setTargetAtTime(rv*.25,now,.3); AU.rain.fl.frequency.setTargetAtTime(out?2200:900,now,.3);
-  AU.rumble.g.gain.setTargetAtTime(.22+lightning*.6,now,.1);
-  const hum=grid.on&&player.inside&&state!=='title'?.026:0; AU.hum.g.gain.setTargetAtTime(hum,now,.05); AU.hum2.g.gain.setTargetAtTime(hum*.7,now,.05);
+  AU.rumble.g.gain.setTargetAtTime((.22+lightning*.6)*duck,now,.1);
+  const hum=grid.on&&player.inside&&state!=='title'?.024*duck:0; AU.hum.g.gain.setTargetAtTime(hum,now,.05); AU.hum2.g.gain.setTargetAtTime(hum*.7,now,.05);
   const dv=tension*.09; AU.drone1.g.gain.setTargetAtTime(dv,now,.8); AU.drone2.g.gain.setTargetAtTime(dv,now,.8); AU.drone3.g.gain.setTargetAtTime(dv*1.3,now,.8);
-  const cd=car.g.position.distanceTo(player.pos); AU.engine.g.gain.setTargetAtTime(car.engine?clamp(1-cd/30,0,1)*.12:0,now,.2);
+  const cd=car.g.position.distanceTo(player.pos); AU.engine.g.gain.setTargetAtTime(car.engine?clamp(1-cd/30,0,1)*.12*duck:0,now,.2);
+  // cooler compressor cycling on and off
+  compT-=dt; if(compT<=0){ compOn=!compOn; compT=compOn?30+Math.random()*30:15+Math.random()*20; if(Math.hypot(player.pos.x+1,player.pos.z+2.5)<9) sfx.click(); }
+  const dComp=Math.hypot(player.pos.x+1,player.pos.z+2.5); AU.comp.g.gain.setTargetAtTime(compOn&&grid.on&&state!=='title'?clamp(1-dComp/11,0,1)*.05*duck:0,now,.4);
+  const dBuzz=Math.hypot(player.pos.x-BUZZ.x,player.pos.z-BUZZ.z); AU.buzz.g.gain.setTargetAtTime(grid.on&&state!=='title'?clamp(1-dBuzz/5,0,1)*.02*duck*(Math.random()<.2?.2:1):0,now,.03);
+  // radio: soft music bed + a mumbling voice while a caption is up
+  const dRad=Math.hypot(player.pos.x+7.05,player.pos.z-6.55); const rOn=radioOn&&grid.on&&player.inside&&state==='play';
+  const rv2=rOn?clamp(1-dRad/12,0,1)*duck:0;
+  AU.music.g.gain.setTargetAtTime(rv2*(radioSpeak>0?.012:.03)*(hour>=5?.3:1),now,.4);
+  AU.voice.g.gain.setTargetAtTime(radioSpeak>0?rv2*.09*(.3+Math.random()*.7):0,now,.04);
+  if(Math.floor(gt/4)!==AU.chordIdx){ AU.chordIdx=Math.floor(gt/4); const chords=[[220,277,330],[196,247,294],[175,220,262],[165,208,247]]; const ch=chords[AU.chordIdx%4]; AU.music.o.forEach((o,i)=>o.frequency.setTargetAtTime(ch[i]*(hour>=4?.97:1),now,.6)); }
+  const td=Math.abs(truck.x-player.pos.x)+Math.abs(truck.g.position.z-player.pos.z); AU.truck.g.gain.setTargetAtTime(truck.on?clamp(1-td/90,0,1)*.15*duck:0,now,.2); AU.truck.o.frequency.setTargetAtTime(48+(truck.on?Math.sign(player.pos.x-truck.x)*truck.dir*5:0),now,.3);
 }
+// extra ambience voices (added to the audio graph after it starts)
+function initAmbience(){
+  const C=AU.ctx; const mk=(type,f,filt,fq)=>{ const o=C.createOscillator(); o.type=type; o.frequency.value=f; const fl=C.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value=filt; fl.Q.value=fq||.7; const g=C.createGain(); g.gain.value=0; o.connect(fl).connect(g).connect(AU.master); o.start(); return {o,g}; };
+  AU.comp=mk('square',50,180); AU.buzz=mk('sawtooth',120,2400,4); AU.truck=mk('sawtooth',48,160);
+  const mg=C.createGain(); mg.gain.value=0; const mf=C.createBiquadFilter(); mf.type='lowpass'; mf.frequency.value=900; mf.connect(mg).connect(AU.master);
+  AU.music={g:mg,o:[220,277,330].map(f=>{ const o=C.createOscillator(); o.type='triangle'; o.frequency.value=f; o.connect(mf); o.start(); return o; })}; AU.chordIdx=-1;
+  const vs=C.createBufferSource(); vs.buffer=AU.noise; vs.loop=true; const vf=C.createBiquadFilter(); vf.type='bandpass'; vf.frequency.value=700; vf.Q.value=2.5; const vg=C.createGain(); vg.gain.value=0; vs.connect(vf).connect(vg).connect(AU.master); vs.start(); AU.voice={g:vg};
+}
+sfx.glass=()=>{ tone(240,.12,{gain:.25,slide:160}); burst2(.06,{f:3200,q:3,gain:.25}); };
+sfx.bang=()=>{ tone(55,.5,{gain:.9,slide:30}); burst2(.35,{type:'lowpass',f:900,gain:.7}); };
+sfx.dead=()=>{ tone(120,.6,{type:'sawtooth',gain:.25,slide:30}); burst2(.4,{type:'lowpass',f:600,gain:.4}); };
+sfx.breaker=()=>{ burst2(.06,{f:1800,q:2,gain:.4}); tone(90,.25,{gain:.5,slide:50}); };
 
 /* ============================== INPUT ============================== */
 addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(state!=='play'&&state!=='cards'&&state!=='end') return;
+  if(e.code==='Escape'&&uiOpen){ closeRegister(false); return; }
+  if(uiOpen) return;
   if(e.code==='KeyE'){ interact(); }
-  if(e.code==='KeyR' && state==='play'){ noteOpen?closeNote():openNote(); }
-  if(e.code==='KeyF' && state==='play'){ player.flash=!player.flash; sfx.click(); }
+  if(e.code==='KeyR'&&state==='play'){ noteOpen?closeNote():openNote(); }
+  if(e.code==='KeyF'&&state==='play'){ player.flash=!player.flash; sfx.click(); }
   if(e.code==='Space'||e.code==='Enter'){ skip=true; e.preventDefault(); }
-  if(/^Digit[1-4]$/.test(e.code)) pickChoice(+e.code.slice(5)-1);
+  if(/^Digit[1-9]$/.test(e.code)) pickChoice(+e.code.slice(5)-1);
 });
 addEventListener('keyup',e=>{ keys[e.code]=false; });
 addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; });
-function look(dx,dy){ if(noteOpen) return; player.yaw-=dx*.0022*sens; player.pitch=clamp(player.pitch-dy*.0022*sens,-1.45,1.45); }
+function look(dx,dy){ if(noteOpen||uiOpen) return; player.yaw-=dx*.0022*sens; player.pitch=clamp(player.pitch-dy*.0022*sens,-1.45,1.45); }
 document.addEventListener('mousemove',e=>{ if(state!=='play'||paused) return; if(document.pointerLockElement===canvas||(dragLook&&dragging)) look(e.movementX||0,e.movementY||0); });
-canvas.addEventListener('mousedown',()=>{ if(state!=='play') return; if(document.pointerLockElement===canvas){ interact(); return; } if(dragLook){ dragging=true; return; } lock(); });
+canvas.addEventListener('mousedown',()=>{ if(state!=='play'||uiOpen) return; if(document.pointerLockElement===canvas){ interact(); return; } if(dragLook){ dragging=true; return; } lock(); });
 UI.note.addEventListener('click',closeNote);
 addEventListener('mouseup',()=>dragging=false);
 function lock(){ try{ const p=canvas.requestPointerLock(); if(p&&p.catch) p.catch(()=>{ dragLook=true; }); }catch(e){ dragLook=true; } }
 document.addEventListener('pointerlockerror',()=>{ dragLook=true; toast('Drag with the mouse to look around',5); });
-document.addEventListener('pointerlockchange',()=>{ if(document.pointerLockElement===canvas){ paused=false; $('#pause').hidden=true; } else if(state==='play'&&!dragLook){ paused=true; renderFound($('#foundList')); $('#pause').hidden=false; } });
-addEventListener('keydown',e=>{ if(e.code==='Escape'&&dragLook&&state==='play'){ paused=!paused; renderFound($('#foundList')); $('#pause').hidden=!paused; } });
+document.addEventListener('pointerlockchange',()=>{ if(document.pointerLockElement===canvas){ paused=false; $('#pause').hidden=true; } else if(state==='play'&&!dragLook&&!uiOpen){ paused=true; renderFound($('#foundList')); $('#pause').hidden=false; } });
+addEventListener('keydown',e=>{ if(e.code==='Escape'&&dragLook&&state==='play'&&!uiOpen){ paused=!paused; renderFound($('#foundList')); $('#pause').hidden=!paused; } });
 $('#resumeBtn').onclick=()=>{ paused=false; $('#pause').hidden=true; if(!dragLook) lock(); };
 $('#sens').oninput=e=>{ sens=+e.target.value; try{ localStorage.setItem('kc-sens',sens); }catch(_){} };
 try{ const s=localStorage.getItem('kc-sens'); if(s){ sens=+s; $('#sens').value=s; } }catch(_){}
@@ -1288,10 +1682,10 @@ $('#glowAmt').oninput=e=>{ bloomStrength=+e.target.value; bloom.strength=bloomSt
 try{ const gl=localStorage.getItem('kc-glow'); if(gl!==null){ bloomStrength=+gl; $('#glowAmt').value=gl; } }catch(_){}
 $('#againBtn').onclick=()=>location.reload();
 $('#startBtn').onclick=async()=>{
-  initAudio(); AU.ctx.resume?.(); $('#title').hidden=true; lock();
+  initAudio(); initAmbience(); AU.ctx.resume?.(); $('#title').hidden=true; lock();
   await fade(1,1.4); state='cards';
   player.pos.set(START.x,0,START.z); player.yaw=START.yaw;
-  await cards(['In the fall of 2012 I worked the overnight shift at the Kettle Creek Gas & Go, out on Route 41.','The owner, Ray, gave me one sheet of rules and told me to follow them exactly.','I thought it was a joke. Then the store started changing.',{big:'Kettle Creek',small:'12:00 AM',hold:3}],4.2);
+  await cards(['In the fall of 2012 I worked the overnight shift at the Kettle Creek Gas & Go, out on Route 41.','The owner, Ray, gave me one sheet of rules and told me to follow them exactly.','I thought it was a joke. Then the store started changing. Then the customers did.',{big:'Kettle Creek',small:'12:00 AM',hold:3}],4.2);
   state='play'; firstNight();
 };
 addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight,false); composer.setSize(innerWidth,innerHeight); });
@@ -1303,17 +1697,18 @@ function frame(){
   requestAnimationFrame(frame);
   const dt=Math.min(clk.getDelta()*TSCALE,DTMAX); frameN++;
   if(state==='title'){ titleT+=dt; gt+=dt; tickWaiters(); const a=titleT*.035; camera.position.set(-15+Math.sin(a)*3,2.1+Math.sin(a*.7)*.25,33-Math.cos(a)*2); camera.lookAt(1.5,2.2,10); if(Math.random()<.0025) strike(1); }
-  else if(!paused){ gt+=dt; tickWaiters(); updatePlayer(state==='play'||state==='end'?dt:0); if(state==='play') updateInteract(); updateDoors(dt); updateAnomalies(dt);
+  else if(!paused){ gt+=dt; tickWaiters(); updatePlayer(state==='play'||state==='end'?dt:0); if(state==='play') updateInteract(); updateDoors(dt); updateAnomalies(dt); updateCustomers(dt); updateHour(dt); updateEvent(dt); updateRadio(dt);
     if(toastT>0){ toastT-=dt; if(toastT<=0) UI.toast.classList.remove('on'); } }
+  updateTruck(dt);
   tension=lerp(tension,targetTension,dt*.6);
-  updateLights(dt); updateAudio();
+  updateLights(dt); updateAudio(dt);
   rainMat.uniforms.uTime.value=gt; rainMat.uniforms.uCam.value.copy(camera.position);
   grade.uniforms.uTime.value=gt; grade.uniforms.uFear.value=tension*tension*.9; grade.uniforms.uFlash.value=lightning*lightning*.12;
-  if(state==='play' && inOffice() && frameN%3===0){ renderer.setRenderTarget(secRT); renderer.render(scene,secCam); renderer.setRenderTarget(null); }
+  if(state==='play'&&inOffice()&&frameN%3===0){ renderer.setRenderTarget(secRT); renderer.render(scene,secCam); renderer.setRenderTarget(null); }
   composer.render();
 }
 frame();
-window.__kc={ info:()=>({calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures,progs:renderer.info.programs.length}), set dtMax(v){DTMAX=v}, set tscale(v){TSCALE=v}, setState(v){state=v}, get state(){return state}, keys, player, A, PRODUCTS, resetWorld, apply(id){ resetWorld(); const a=A.find(x=>x.id===id); current=a; a&&a.apply(); }, get current(){return current}, get hour(){return hour}, logPrompt, pickChoice, closeNote, openNote, IA, cam:camera, man, car, get busy(){return busy} };
+window.__kc={ endHour, strikeEvent, blackOut, info:()=>({calls:renderer.info.render.calls}), set dtMax(v){DTMAX=v}, set tscale(v){TSCALE=v}, setState(v){state=v}, get state(){return state}, keys, player, A, PRODUCTS, resetWorld, apply(id){ resetWorld(); const a=A.find(x=>x.id===id); current=a; a&&a.apply(); }, get current(){return current}, get hour(){return hour}, get minute(){return minute}, set minute(v){minute=v}, get money(){return money}, get strikes(){return strikes}, customers, spawnCustomer, openRegister, logPrompt, pickChoice, closeNote, openNote, IA, cam:camera, man, car, get busy(){return busy}, get uiOpen(){return uiOpen}, get event(){return hourEvent}, set event(v){hourEvent=v}, setHold, get reg(){return reg} };
 </script>
 </body>
 </html>
