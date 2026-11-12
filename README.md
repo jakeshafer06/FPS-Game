@@ -13,6 +13,12 @@ An endless first-person night-shift horror game that runs in the browser. It's O
 - **Leave the anomalies alone:** touch something that's wrong too many times and it notices. You'll get a hunt, a hiding event, or a strike.
 - **Sound captions:** every important sound pops up as text, like *brrrring* for the phone, with an arrow showing which way it came from. Turn them off in Settings → Audio.
 
+## What's new in 4.3
+
+- Put on headphones at the radio to hear the song clean, like background music. The rain gets quieter and more muffled while you wear them.
+- The radio song is louder, and only the recorded rain plays (the synthesized rain is a fallback if `rain.mp3` is missing).
+- There are a few secrets in the store. Look closely at the office.
+
 ## What's new in 4.2
 
 - Sound captions for the phone, knocks, footsteps, growls, the door chime, thunder, and other audio cues.
