@@ -1,6 +1,10 @@
 # Kettle Creek
 
-A short first-person horror story game that runs in the browser. October 2012: it's your first overnight shift alone at the Kettle Creek Gas & Go on Route 41, and your boss warned you about a grey Buick.
+A first-person night-shift anomaly game that runs in the browser. It's October 2012 and you're working the overnight shift alone at the Kettle Creek Gas & Go on Route 41. The owner left you a sheet of rules.
+
+Every hour, walk the store and decide whether anything has changed. Log the hour at the register as **ALL CLEAR** or **REPORT**. One wrong call and the night starts over at 12:00 AM. Make it to 6:00 AM to win.
+
+There are 28 anomalies, from subtle (a clock running backwards) to dangerous (something in the aisle that moves when you look away). Anomalies you find are remembered between nights.
 
 ## Play
 
@@ -38,7 +42,8 @@ The included `netlify.toml` tells Netlify there is no build step and to publish 
 | Mouse | Look |
 | E / click | Interact |
 | F | Phone flashlight |
-| 1, 2 | Choose a reply |
+| R | Read Ray's rules |
+| 1, 2, 3 | Choose an option |
 | Space | Skip a line |
 | Esc | Pause (mouse sensitivity, glow, and graphics settings) |
 
@@ -49,10 +54,6 @@ Needs a keyboard and mouse. Headphones recommended.
 Everything is in one file, `index.html`:
 
 - **Three.js 0.160** (ES modules via an import map) for rendering, with bloom and a custom film-grain, vignette, and chromatic-aberration pass.
-- All textures (floor tiles, asphalt, signs, posters) are drawn at runtime with the Canvas API, so there are no image or model files.
+- All textures and product packaging (every brand is invented) are drawn at runtime with the Canvas API, with normal maps generated from height maps. All models are built in code, so there are no image or model files.
 - All sound (rain, fluorescent hum, phone, thunder, stingers) is synthesized with the Web Audio API.
-- The story is a single async script (`story()`) built from small helpers: `say`, `choose`, `use`, `wait`, and `until`.
-
-## Endings
-
-There are two endings, decided by one choice near the end.
+- Each anomaly is one entry in a list with a description and an `apply()` function. `resetWorld()` puts the store back to normal at the start of every hour.
