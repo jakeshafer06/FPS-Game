@@ -13,6 +13,17 @@ An endless first-person night-shift horror game that runs in the browser. It's O
 - **Leave the anomalies alone:** touch something that's wrong too many times and it notices. You'll get a hunt, a hiding event, or a strike.
 - **Sound captions:** every important sound pops up as text, like *brrrring* for the phone, with an arrow showing which way it came from. Turn them off in Settings → Audio.
 
+## What's new in 5.0
+
+- **The thing in the store is always there.** Early in the night you only hear it. Later it watches you. By the last hours it hunts. It follows sound (running, slamming doors, the phone), learns where you spend your time, imitates voices to lure you, and creeps closer while you watch the cameras.
+- **A set piece every night** from night 2: the generator dies in the dark, someone begs to hide in your office, the store loops on itself, Ray shows up, and Carla calls from inside the walls.
+- **Anomalies escalate.** Leave one unreported and it gets worse as the hour goes on. Some react to you. At :50 something may come for you.
+- **Fewer, scarier chores**: one risky chore every other hour, in the dark, and you won't be alone.
+- **Scarier customers**: someone needs help outside, a lost kid asks for their mom, a fake you served follows you for the rest of the night, and fakes get harder to spot every night.
+- **Three endings** and a best-runs scoreboard on the title screen.
+- **New character models** with faces, jointed arms and legs, and fabric clothes, and a new monster.
+- Fewer random jumpscares, and a faster first night.
+
 ## What's new in 4.5
 
 - Chores before every hour, not just before the shift. When an hour ends the clock stops, you do one or two chores, then clock back in at the register to start the next hour.

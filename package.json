@@ -1,6 +1,6 @@
 {
   "name": "kettle-creek",
-  "version": "4.5.0",
+  "version": "5.0.0",
   "description": "An endless first-person night-shift horror game that runs in the browser.",
   "private": true,
   "scripts": {
