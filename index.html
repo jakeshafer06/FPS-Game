@@ -254,7 +254,7 @@ body.photo #hud,body.photo #sfxcap{display:none!important}
       <button class="btn ghost" id="titleSettings">Settings</button>
     </div>
     <div class="keys"><kbd>W A S D</kbd> move &nbsp; <kbd>Shift</kbd> run &nbsp; <kbd>E</kbd> / click interact &nbsp; <kbd>F</kbd> flashlight &nbsp; <kbd>Q</kbd> drop item &nbsp; <kbd>C</kbd> crouch &nbsp; <kbd>V</kbd> drink coffee &nbsp; <kbd>R</kbd> rules<br><kbd>1</kbd>–<kbd>7</kbd> choose &nbsp; <kbd>Space</kbd> skip &nbsp; <kbd>Esc</kbd> pause · Headphones recommended</div>
-    <div class="keys" id="ver">Version 5.0 · Best run: <span id="bestTitle">0</span> nights · Anomalies found: <span id="foundTitle">0</span></div>
+    <div class="keys" id="ver">Version 5.1 · Best run: <span id="bestTitle">0</span> nights · Anomalies found: <span id="foundTitle">0</span></div>
     <div class="keys" id="runsTitle" style="text-transform:none;letter-spacing:.06em"></div>
     <div id="mobile">Needs a keyboard and mouse. Open this on a desktop computer.</div>
   </div>
@@ -1295,14 +1295,14 @@ const keys={}; let sens=1, dragLook=false, dragging=false;
 let state='title', paused=false, tension=0, targetTension=0, current=null, noteOpen=false, uiOpen=false;
 function resolve(p,r){ for(let it=0;it<2;it++) for(const c of colliders){ if(!c.on) continue; const cx=clamp(p.x,c.minX,c.maxX), cz=clamp(p.z,c.minZ,c.maxZ); const dx=p.x-cx, dz=p.z-cz, d2=dx*dx+dz*dz;
   if(d2<r*r){ if(d2>1e-8){ const d=Math.sqrt(d2), k=(r-d)/d; p.x+=dx*k; p.z+=dz*k; } else { const o=[p.x-c.minX,c.maxX-p.x,p.z-c.minZ,c.maxZ-p.z]; const m=Math.min(...o); if(m===o[0]) p.x=c.minX-r; else if(m===o[1]) p.x=c.maxX+r; else if(m===o[2]) p.z=c.minZ-r; else p.z=c.maxZ+r; } } } }
-const isInside = p => (p.x>-10&&p.x<10&&p.z>-8&&p.z<8)||inDevRoomP(p);
+const isInside = p => (p.x>-10&&p.x<10&&p.z>-8&&p.z<8)||inDevRoomP(p)||(p.y!==undefined&&p.y<-20);
 const inOffice = () => player.pos.x<-5 && player.pos.z<-3.15;
 function updatePlayer(dt){
   if(DEV.fly&&devFly(dt)) return;
   const f=new V3(-Math.sin(player.yaw),0,-Math.cos(player.yaw)), r=new V3(Math.cos(player.yaw),0,-Math.sin(player.yaw));
   const mv=new V3(); if(player.canMove && !noteOpen && !uiOpen && camMode<0){ if(keys.KeyW||keys.ArrowUp) mv.add(f); if(keys.KeyS||keys.ArrowDown) mv.sub(f); if(keys.KeyD||keys.ArrowRight) mv.add(r); if(keys.KeyA||keys.ArrowLeft) mv.sub(r); }
   player.crouch=!!(keys.KeyC||keys.ControlLeft); player.h=lerp(player.h,DEV.tiny?.24:DEV.reverse?2.15:player.crouch?1.0:1.62,Math.min(1,dt*10));
-  const run=(keys.ShiftLeft||keys.ShiftRight)&&!player.crouch; const sp=(player.crouch?1.15:(run?4.4:2.3))*(DEV.tiny?.55:1)*(DEV.speed?2.6:1); const moving=mv.lengthSq()>0; player.moving=moving; player.running=run&&moving;
+  const run=(keys.ShiftLeft||keys.ShiftRight)&&!player.crouch; const sp=(player.crouch?1.15:(run?4.4:2.3))*(DEV.tiny?.55:1)*(DEV.speed?2.6:1)*(FLOOD.on&&inOffice()?.6:1); const moving=mv.lengthSq()>0; player.moving=moving; player.running=run&&moving;
   if(moving){ mv.normalize().multiplyScalar(sp*dt); const before=player.pos.clone(); player.pos.add(mv); resolve(player.pos,player.r); player.pos.x=clamp(player.pos.x,-40,45); player.pos.z=clamp(player.pos.z,-32,40);
     const dist=player.pos.distanceTo(before); const pb=player.bob; player.bob+=dist*(run?2.1:2.6); if(Math.floor(pb/Math.PI)!==Math.floor(player.bob/Math.PI)){ sfx.step(!isInside(player.pos)); noiseAt(player.pos.x,player.pos.z,player.running?9:player.crouch?0:1.6); if(W.follow>0) setTimeout(()=>sfx.step(false,.55),300); } }
   player.inside=isInside(player.pos);
@@ -1332,7 +1332,7 @@ function setEm(m,t){ m.emissiveMap=t; m.needsUpdate=true; }
 const openItem = grid.items.find(i=>i.m===openSign);
 const missingRow = PRODUCTS.filter(r=>r.tag.door===1 && r.tag.s===2 && r.tag.front && r.tag.k>=1 && r.tag.k<=3);
 function resetWorld(){
-  clearThrown();
+  clearThrown(); bigOff();
   setEm(exitFront,T.exit); posterMat.map=T.missing; posterMat.needsUpdate=true; setEm(signMat,T.sign); setEm(priceMat,T.priceSign); setEm(register.screen,T.pos);
   setEm(coldHdr,T.cold); setEm(atmMat,T.atm); calMat.map=T.cal; calMat.needsUpdate=true; openItem.base=2.0;
   resetProducts(); for(const d of coolerDoors) d.rotation.y=0;
@@ -1406,11 +1406,11 @@ const LOOK={ jackets:[0x2b3a4f,0x4a2d24,0x2f3b2a,0x5b5f63,0x1c1c20,0x6b4b2a,0x7a
 const randLook=()=>({jacket:rpick(LOOK.jackets),pants:rpick(LOOK.pants),skin:rpick(LOOK.skins),hair:rpick(LOOK.hair),hat:Math.floor(Math.random()*4),h:.93+Math.random()*.13,w:.9+Math.random()*.25,stubble:Math.random()<.3,eye:rpick([0x3a2614,0x4a6a8a,0x3a5a3a,0x5a3a1a]),shoe:rpick([0x1a1714,0x3a2a1a,0xd8d4cc,0x22242a])});
 function makePerson(L,wet,fake){ return buildHuman({...L,wet,fake}); }
 const customers=[]; let custLeft=0, custTotal=0, custNext=0, servedLooks=[];
-const custPending=()=>custLeft+customers.filter(c=>['walk','idle','talking','scanning','waiting','serving'].includes(c.state)).length;
+const custPending=()=>custLeft+customers.filter(c=>['walk','idle','talking','scanning','waiting','serving','queue'].includes(c.state)).length;
 const custObjText=()=>`Serve every customer (${custTotal-custPending()}/${custTotal})`;
 function reqLabel(r){ return r.type==='cig'?`Pack of ${CIGS[r.brand]}`:r.type==='coffee'?'Large coffee':r.type==='hotdog'?'Hot dog':r.type==='pump'?`$${r.amount} on pump ${r.pump}`:r.name; }
 function reqPrice(r){ return r.type==='pump'?r.amount:(REQ_PRICE[r.type]||0); }
-function spawnCustomer(forceFake){
+function spawnCustomer(forceFake,qi=0){
   const fakeChance = night===1&&hour===0?0:Math.min(.6,.12+hour*.05+(night-1)*.06);
   const fake = forceFake!==undefined?forceFake:Math.random()<fakeChance;
   const tells=new Set(); let look=randLook();
@@ -1431,6 +1431,7 @@ function spawnCustomer(forceFake){
   const greet=rpick(['Evening.','Hey.','Long night, huh?','Hi there.','Just these.','Morning. Or night. Whatever it is.']);
   const ask=c.reqs.map(r=>r.type==='cig'?`And a pack of ${CIGS[r.brand][0]+CIGS[r.brand].slice(1).toLowerCase()}.`:r.type==='coffee'?'And a large coffee, black.':r.type==='hotdog'?'And one of those hot dogs.':r.type==='pump'?`And ${NUM[r.amount/10]||r.amount} ${r.amount===10?'':'tens '}on pump ${NUM[r.pump]}.`.replace('one tens','ten').replace('two tens','twenty').replace('three tens','thirty').replace('four tens','forty'):`And ${r.name.toLowerCase()}.`).join(' ');
   c.line=(greet+' '+ask).trim();
+  if(qi>0){ c.queued=true; c.path[c.path.length-1]=[-4.3,5.4+(qi-1)*.9]; g.position.z+=1.4*qi; c.lastZ=g.position.z; }
   if(special){ c.special=special; c.items=[]; c.reqs=[]; c.line=special==='kid'?"Have you seen my mom? She said she'd be right back.":"Hey, sorry. My car won't start out there. Could you come give me a hand? It'll take a second."; }
   if(fake && Math.random()<.4) c.line=c.line.replace(/^(\S+)/,'$1 $1');
   if(!fake&&night>=2&&Math.random()<.04) devGuy(c); // rare Easter egg: the developer stops by
@@ -1456,12 +1457,13 @@ function sendAway(c,vanish){ removeCounterItems(c); c.state=vanish?'vanish':'lea
 function updateCustomers(dt){
   for(const c of customers){ const g=c.g, u=g.userData; let moving=false;
     if(c.state==='walk'&&(userLocked||frontLocked)&&!c.tells.has('nochime')&&!c.tells.has('back')&&g.position.z>8.6&&c.path[c.pi]&&c.path[c.pi][1]<8.6){ c.doorWait=(c.doorWait||0)+dt; if(Math.floor(c.doorWait/2.6)!==Math.floor((c.doorWait-dt)/2.6)) sfx.knockAt(g.position.x,8); if(c.doorWait>25){ sendAway(c,false); money-=10; updatePay(); mistake('Left a customer locked outside.'); } animMan(g,0,false); continue; }
+    if(c.state==='queue'){ g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(-5.35-g.position.x,4.3-g.position.z),dt*3); animMan(g,0,false); if(!customers.some(x=>x!==c&&!x.queued&&['walk','idle','talking','scanning','waiting','serving'].includes(x.state))){ c.queued=false; c.state='walk'; c.path=[[-5.35,4.3]]; c.pi=0; } continue; }
     if(c.state==='linger'){ c.lingerT-=dt; g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(player.pos.x-g.position.x,player.pos.z-g.position.z),dt*3); animMan(g,0,false); if(c.lingerT<=0) disposeCustomer(c); continue; }
     if(c.state==='walk'||c.state==='leave'||c.state==='vanish'){
       if(c.pause>0){ c.pause-=dt; }
       else { const t=c.path[c.pi]; const dx=t[0]-g.position.x, dz=t[1]-g.position.z, d=Math.hypot(dx,dz);
         if(d<.06){ if(t[2]==='pause'){ c.pause=2.5+Math.random()*4; g.rotation.y=Math.random()<.5?Math.PI/2:-Math.PI/2; } c.pi++;
-          if(c.pi>=c.path.length){ if(c.state==='walk'){ c.state='idle'; if(!tutorialServed) toast('A customer is waiting at the counter. Look at them and press E to talk.',6); } else if(c.state==='leave'&&!c.fake&&!c.lingered&&night>=2&&Math.random()<.25){ c.lingered=true; c.state='linger'; c.lingerT=16+Math.random()*10; g.position.set(-8+Math.random()*16,0,9.8); } else disposeCustomer(c); } }
+          if(c.pi>=c.path.length){ if(c.state==='walk'&&c.queued){ c.state='queue'; } else if(c.state==='walk'){ c.state='idle'; if(!tutorialServed) toast('A customer is waiting at the counter. Look at them and press E to talk.',6); } else if(c.state==='leave'&&!c.fake&&!c.lingered&&night>=2&&Math.random()<.25){ c.lingered=true; c.state='linger'; c.lingerT=16+Math.random()*10; g.position.set(-8+Math.random()*16,0,9.8); } else disposeCustomer(c); } }
         else { const st=Math.min(d,c.speed*dt); g.position.x+=dx/d*st; g.position.z+=dz/d*st; g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(dx,dz),dt*7); moving=true; } }
     }
     if(!c.tells.has('nochime') && (c.lastZ-8)*(g.position.z-8)<0 && Math.abs(g.position.x-2.8)<1.6) sfx.chime(); c.lastZ=g.position.z;
@@ -1561,11 +1563,11 @@ function setupHour(first){
   resetWorld(); clearCustomers(); setHold(null); current=null; current2=null; minute=0; warned50=false; outsideT=0; backT=0;
   if(!first){
     let p=Math.min(.62,.36+night*.05); if(anomStreak>=2) p=0; else if(clearStreak>=2) p=.62;
-    if(Math.random()<p){ const maxTier=Math.min(3,(hour<=1?1:hour<=2?2:3)+(night>=3?1:0)); const pool=A.filter(a=>a.tier<=maxTier&&a.id!==lastId&&(!a.hostile||hour>=3||night>=3)); const fresh=pool.filter(a=>!found.has(a.id)); current=rpick(fresh.length?fresh:pool); current.apply(); lastId=current.id; anomStreak++; clearStreak=0; if(night>=4&&hour>=2&&Math.random()<.3){ const p2=pool.filter(a=>a!==current&&!a.hostile&&!a.areas.some(x=>current.areas.includes(x))); if(p2.length){ current2=rpick(p2); current2.apply(); } } }
+    if(Math.random()<p){ const maxTier=Math.min(3,(hour<=1?1:hour<=2?2:3)+(night>=3?1:0)); const pool=A.filter(a=>a.tier<=maxTier&&a.id!==lastId&&(!a.hostile||hour>=3||night>=3)); const fresh=pool.filter(a=>!found.has(a.id)); const bigP=pool.filter(a=>a.big); current=(bigP.length&&Math.random()<.45)?rpick(bigP.filter(a=>!found.has(a.id)).length?bigP.filter(a=>!found.has(a.id)):bigP):rpick(fresh.length?fresh:pool); current.apply(); lastId=current.id; anomStreak++; clearStreak=0; if(night>=4&&hour>=2&&Math.random()<.3){ const p2=pool.filter(a=>a!==current&&!a.hostile&&!a.areas.some(x=>current.areas.includes(x))); if(p2.length){ current2=rpick(p2); current2.apply(); } } }
     else { anomStreak=0; clearStreak++; }
   }
   backDark=!first&&hour>=2&&Math.random()<.5; if(backDark) grid.off.add('back');
-  custTotal=first?1:Math.min(4,1+Math.floor(Math.random()*2)+(hour>=3?1:0)+Math.floor((night-1)/2)); custLeft=custTotal; custNext=first?0:.4+Math.random()*.8;
+  custTotal=first?1:night<3?2:Math.min(4,1+Math.floor(Math.random()*2)+(hour>=3?1:0)+Math.floor((night-1)/2)); custLeft=custTotal; custNext=first?0:.4+Math.random()*.8;
   hourEvent=null;
   if(!first&&hour>=2&&eventsThisNight<2+Math.floor(night/2)&&!(current&&(current.hostile||current.id==='office'))&&Math.random()<(hour>=4?.35:.22)+night*.05){ hourEvent={type:hour>=3&&Math.random()<.45?'still':'blackout',at:16+Math.random()*22,started:false}; eventsThisNight++; }
   if(first){ player.pos.set(START.x,0,START.z); player.yaw=START.yaw; player.pitch=-.05; } player.lastZ=player.pos.z; prevP.copy(player.pos); messN=0; messWarned=0;
@@ -2283,7 +2285,7 @@ function updateHour(dt){
   if(timerOn&&minute>=50&&!warned50){ warned50=true; toast('Ten minutes left to log the hour.',4); sfx.beep(); }
   if(timerOn&&minute>=60){ endHour('timeout','The hour ran out before you logged it.'); return; }
   setClock();
-  if(custLeft>0&&timerOn&&minute>=custNext&&!customers.length&&!(hourEvent&&hourEvent.started&&hourEvent.phase!=='done')){ custLeft--; spawnCustomer(); }
+  if(custLeft>0&&timerOn&&minute>=custNext&&!customers.length&&!(hourEvent&&hourEvent.started&&hourEvent.phase!=='done')){ if(night<3){ const n=custLeft; custLeft=0; for(let i=0;i<n;i++) spawnCustomer(undefined,i); } else { custLeft--; spawnCustomer(); } }
   if(objectives.cust){ if(custTotal>0&&custPending()===0) done('cust'); else obj('cust',custObjText()); }
   // risky places: no strike, but they cost you
   if(hour>0||timerOn){
@@ -2512,7 +2514,7 @@ mesh(new THREE.PlaneGeometry(.9,1.25),lit(textTex(300,420,(g,w,h)=>{ g.fillStyle
 box(.7,.76,1.4,M.woodLam,-5.62,.38,-11.3,{uv:1,cast:true}); colliders.push({minX:-5.98,maxX:-5.1,minZ:-12.02,maxZ:-10.58,on:true,top:.8});
 const devTerm=new THREE.Group(); devTerm.position.set(-5.7,.76,-11.3); devTerm.rotation.y=-Math.PI/2; scene.add(devTerm);
 box(.46,.4,.42,M.beige,0,.22,0,{parent:devTerm,uv:0,cast:true});
-mesh(new THREE.PlaneGeometry(.38,.29),glow(textTex(256,192,(g,w,h)=>{ g.fillStyle='#021208'; g.fillRect(0,0,w,h); g.fillStyle='#3dff8c'; g.font='600 15px "IBM Plex Mono", monospace'; g.textAlign='left'; ['KCGG DEV TERMINAL v5.0','','> access: GRANTED','> cheats: ONLINE','','type "developer"','anywhere to open','the panel_'].forEach((l,i)=>g.fillText(l,12,24+i*20)); }),0xffffff,1.2),0,.23,.212,{parent:devTerm});
+mesh(new THREE.PlaneGeometry(.38,.29),glow(textTex(256,192,(g,w,h)=>{ g.fillStyle='#021208'; g.fillRect(0,0,w,h); g.fillStyle='#3dff8c'; g.font='600 15px "IBM Plex Mono", monospace'; g.textAlign='left'; ['KCGG DEV TERMINAL v5.1','','> access: GRANTED','> cheats: ONLINE','','type "developer"','anywhere to open','the panel_'].forEach((l,i)=>g.fillText(l,12,24+i*20)); }),0xffffff,1.2),0,.23,.212,{parent:devTerm});
 const goldM=std({color:0xd8a43a,metalness:.9,roughness:.25,envMap:envTex,envMapIntensity:1.2}), dimM=std({color:0x2c2c2c,roughness:.85});
 const trophyShelf=new THREE.Group(); scene.add(trophyShelf); const trophies=[];
 { const base=new THREE.BoxGeometry(.07,.03,.07); base.translate(0,.015,0); const stem=new THREE.CylinderGeometry(.008,.008,.05,8); stem.translate(0,.055,0); const cup=latheUV([[0,0],[.012,0],[.03,.02],[.035,.06],[0,.06]],12); cup.translate(0,.08,0);
@@ -2964,8 +2966,113 @@ async function endFree(){ if(busy) return; busy=true; spEnd(); stopStalker(); aw
 function endEscape(){ const sc=recordRun('escape'); $('#day').hidden=true; showEnd('Ending · Escape',`At 6:02 AM you hand Ray the keys and drive away from Route 41. In the rear-view mirror, someone new is already behind the counter. You never find out who. Score ${sc}.`); }
 function renderQuit(){ let q=$('#quitBtn'); if(night>=7){ if(!q){ q=document.createElement('button'); q.className='btn ghost'; q.id='quitBtn'; q.textContent='Quit and drive away · ending'; q.onclick=()=>endEscape(); $('#dayGo').parentNode.appendChild(q); } } else if(q) q.remove(); }
 function spReset(){ spCleanup(); SPC.ran=false; SPC.active=false; SPC.gen=false; crackMesh.visible=false; FOL.look=null; if(FOL.g){ scene.remove(FOL.g); FOL.g=null; } PR.visits={front:1,aisles:1,drinks:1,back:1,office:1,outside:1}; PR.camHeat=0; PR.mimic=null; BL.on=false; }
-function updateTerror(dt){ updatePresence(dt); updateSetPiece(dt); updateEscalation(dt); updateFollower(dt); updateBreakLurk(dt); }
+function updateTerror(dt){ updatePortals(dt); updatePresence(dt); updateSetPiece(dt); updateEscalation(dt); updateFollower(dt); updateBreakLurk(dt); }
 renderRuns();
+
+/* ============================== IMMERSIVE ANOMALIES: portals, an endless aisle, the store that repeats, a hallway, a flood ============================== */
+// A portal is a plane that shows a live second view of the world through a transform M, clipped at the destination plane.
+// Walking through one moves you through M, so the view never jumps.
+const PORTALS=[];
+const _cp=new THREE.Plane(), _cv=new THREE.Vector4(), _q4=new THREE.Vector4(), _fr=new THREE.Frustum(), _pm=new THREE.Matrix4();
+function obliqueClip(cam,plane){ _cp.copy(plane).applyMatrix4(cam.matrixWorldInverse); _cv.set(_cp.normal.x,_cp.normal.y,_cp.normal.z,_cp.constant); const e=cam.projectionMatrix.elements;
+  _q4.set((Math.sign(_cv.x)+e[8])/e[0],(Math.sign(_cv.y)+e[9])/e[5],-1,(1+e[10])/e[14]); _cv.multiplyScalar(2/_cv.dot(_q4)); e[2]=_cv.x; e[6]=_cv.y; e[10]=_cv.z+1; e[14]=_cv.w; }
+function makePortal(o){ const mkRT=()=>new THREE.WebGLRenderTarget(4,4,{type:THREE.HalfFloatType});
+  const P={rtA:mkRT(),rtB:mkRT(),M:o.M,yaw:o.yaw||0,on:false,recursive:!!o.recursive,cross:o.cross,onCross:o.onCross,vcam:new THREE.PerspectiveCamera()}; P.vcam.matrixAutoUpdate=false;
+  P.mat=new THREE.ShaderMaterial({uniforms:{tMap:{value:P.rtA.texture},uRes:{value:new THREE.Vector2(1,1)},uTime:{value:0},uOval:{value:o.oval?1:0}},transparent:!!o.oval,depthWrite:true,fog:false,
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`uniform sampler2D tMap; uniform vec2 uRes; uniform float uTime,uOval; varying vec2 vUv;
+      void main(){ vec2 suv=gl_FragCoord.xy/uRes; vec3 col;
+        if(uOval>.5){ vec2 d=vUv-.5; float r=length(d); if(r>.5) discard; float edge=smoothstep(.33,.5,r); float a=atan(d.y,d.x);
+          suv+=vec2(cos(a*3.+uTime*2.),sin(a*5.-uTime*1.7))*.014*edge; col=texture2D(tMap,suv).rgb;
+          vec3 rim=mix(vec3(.45,.08,.9),vec3(1.,.22,.15),.5+.5*sin(a*4.+uTime*3.)); float sw=.5+.5*sin(a*6.-uTime*4.+r*34.); col=mix(col,rim*2.4*(.55+.45*sw),edge*edge); }
+        else col=texture2D(tMap,suv).rgb;
+        gl_FragColor=vec4(col,1.); }`});
+  P.mesh=new THREE.Mesh(new THREE.PlaneGeometry(o.w,o.h),P.mat); P.mesh.position.copy(o.pos); P.mesh.rotation.y=o.ry||0; P.mesh.visible=false; P.mesh.renderOrder=1; scene.add(P.mesh);
+  // destination clip plane: the source plane carried through M, facing the visible side
+  const n=new V3(0,0,-1).applyAxisAngle(new V3(0,1,0),o.ry||0); const pt=o.pos.clone().addScaledVector(n,o.clipPush||0);
+  const nd=n.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(o.M)).normalize(); P.dst=new THREE.Plane().setFromNormalAndCoplanarPoint(nd,pt.applyMatrix4(o.M));
+  PORTALS.push(P); return P; }
+function renderPortals(){ if(!PORTALS.some(p=>p.on)) return; const pr=renderer.getPixelRatio(), W=Math.max(2,Math.floor(innerWidth*pr*.5)), Hh=Math.max(2,Math.floor(innerHeight*pr*.5));
+  camera.updateMatrixWorld(); _pm.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse); _fr.setFromProjectionMatrix(_pm);
+  const sAuto=renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate=false;
+  for(const P of PORTALS){ if(!P.on) continue; P.mesh.visible=camMode<0; P.mat.uniforms.uTime.value=gt; P.mat.uniforms.uRes.value.set(composer.readBuffer.width,composer.readBuffer.height);
+    if(camMode>=0||!_fr.intersectsObject(P.mesh)||P.mesh.position.distanceTo(camera.position)>45) continue;
+    for(const rt of [P.rtA,P.rtB]) if(rt.width!==W||rt.height!==Hh) rt.setSize(W,Hh);
+    const v=P.vcam; v.fov=camera.fov; v.aspect=camera.aspect; v.near=camera.near; v.far=camera.far; v.updateProjectionMatrix();
+    v.matrixWorld.multiplyMatrices(P.M,camera.matrixWorld); v.matrixWorldInverse.copy(v.matrixWorld).invert(); obliqueClip(v,P.dst);
+    P.mat.uniforms.tMap.value=P.rtA.texture; if(!P.recursive) P.mesh.visible=false;
+    P.mat.uniforms.uRes.value.set(W,Hh); renderer.setRenderTarget(P.rtB); renderer.render(scene,v); renderer.setRenderTarget(null);
+    P.mat.uniforms.uRes.value.set(composer.readBuffer.width,composer.readBuffer.height); P.mesh.visible=true; const t=P.rtA; P.rtA=P.rtB; P.rtB=t; P.mat.uniforms.tMap.value=P.rtA.texture; }
+  renderer.shadowMap.autoUpdate=sAuto; }
+function throughPortal(P){ const p=player.pos; p.applyMatrix4(P.M); player.yaw+=P.yaw; prevP.copy(p); PT.prev.copy(p); player.lastZ=p.z; fear=Math.min(100,fear+8); }
+const PT={prev:new V3()};
+
+// 1) the endless aisle: the middle aisle goes on forever, and walking to the end puts you back at the start
+const aisleP=makePortal({w:2.75,h:3.2,pos:new V3(2.3,1.6,-.82),M:new THREE.Matrix4().makeTranslation(0,0,5.4),recursive:false,
+  cross:(a,b)=>a.z>-.82&&b.z<=-.82&&Math.abs(b.x-2.3)<1.35&&b.y>-5, onCross:()=>throughPortal(aisleP)});
+// 2) the store repeats: the front windows look into the store again, and walking out the front door brings you back in
+const buildP=makePortal({w:20.4,h:2.55,pos:new V3(0,1.33,8.07),ry:Math.PI,M:new THREE.Matrix4().makeRotationY(Math.PI).setPosition(0,0,16),yaw:Math.PI,clipPush:.08,
+  cross:(a,b)=>a.z<8.3&&b.z>=8.3&&b.x>1.8&&b.x<3.8, onCross:()=>throughPortal(buildP)});
+// 3) a portal in the aisle that opens onto the dark woods behind the store, where something is standing
+const woodsP=makePortal({w:1.15,h:2.25,pos:new V3(-1.4,1.17,1.8),M:new THREE.Matrix4().makeTranslation(-.6,0,-23.8),oval:true,
+  cross:(a,b)=>a.z>1.8&&b.z<=1.8&&Math.abs(b.x+1.4)<.5&&b.y>-5, onCross:()=>{ throughPortal(woodsP); toast('You stepped through. The store is somewhere behind you.',3.5); }});
+const woodsLight=point(0x6a74ff,0,new V3(-2,2.4,-24),16);
+// 4) the back room doorway opens onto a long hallway that shouldn't exist (built far below the map)
+const HALL={on:false,step:1,cols:[]};
+const hallP=makePortal({w:1.0,h:2.2,pos:new V3(4.5,1.1,-2.88),M:new THREE.Matrix4().makeTranslation(26.5,-40,4.88),
+  cross:(a,b)=>a.z>-2.88&&b.z<=-2.88&&b.x>4&&b.x<5&&b.y>-5, onCross:()=>{ throughPortal(hallP); }});
+const hallLights=[];
+{ const y0=-40, x0=31, c0=colliders.length;
+  box(2.6,.1,31,M.floor,x0,y0-.05,-13,{uv:1.2}); box(2.6,.1,31,M.ceil,x0,y0+3.25,-13,{uv:1.2});
+  box(.2,3.2,31,M.wall,x0-1.3,y0+1.6,-13,{collide:true,uv:1.6}); box(.2,3.2,31,M.wall,x0+1.3,y0+1.6,-13,{collide:true,uv:1.6});
+  box(2.6,3.2,.2,M.wall,x0,y0+1.6,-28.4,{collide:true,uv:1.6}); box(2.6,3.2,.2,M.wall,x0,y0+1.6,2.3,{collide:true,uv:1.6});
+  HALL.cols=colliders.slice(c0); HALL.cols.forEach(c=>c.on=false);
+  const doorM=std({color:0x3a2a1c,roughness:.7}); for(let i=0;i<7;i++){ const z=-1.5-i*3.8, s=i%2?1:-1; box(.06,2.1,.95,doorM,x0+s*1.19,y0+1.05,z,{uv:0}); mesh(new THREE.SphereGeometry(.03,8,6),M.steel,x0+s*1.15,y0+1.0,z+.35,{}); }
+  box(.06,2.1,1.0,doorM,x0,y0+1.05,-28.27,{uv:0,ry:Math.PI/2}); box(.06,2.1,1.0,doorM,x0,y0+1.05,2.17,{uv:0,ry:Math.PI/2});
+  for(let i=0;i<4;i++){ const z=-1-i*8; box(.5,.05,.25,glow(null,0xfff0d0,1.2),x0,y0+3.17,z,{uv:0}); hallLights.push(point(0xffe8c8,0,new V3(x0,y0+2.9,z),9)); } }
+const corrMon=makeMonster();
+// 5) the office is flooded with black water, and something moves under it
+const FLOOD={on:false,lvl:.3,handT:3,splT:0,hand:0};
+const waterN=(()=>{ const [c,g]=cv(256); g.fillStyle='#808080'; g.fillRect(0,0,256,256); blot(g,256,256,60,'255,255,255',8,40,.5); blot(g,256,256,60,'0,0,0',8,40,.5); const t=nmap(c,3); t.repeat.set(3,3); return t; })();
+const waterMat=std({color:0x050807,roughness:.06,metalness:.5,envMap:envTex,envMapIntensity:1.3,normalMap:waterN,normalScale:new THREE.Vector2(.35,.35),transparent:true,opacity:.94});
+const waterMesh=mesh(new THREE.PlaneGeometry(5,5),waterMat,-7.5,.3,-5.5,{rx:-Math.PI/2}); waterMesh.visible=false;
+const floodHand=new THREE.Group(); scene.add(floodHand); floodHand.visible=false;
+{ const sk=std({color:0x9a9488,roughness:.7}); mesh(new THREE.CapsuleGeometry(.04,.5,4,10),sk,0,.25,0,{parent:floodHand}); mesh(new THREE.BoxGeometry(.08,.14,.03),sk,0,.58,0,{parent:floodHand}); for(let i=0;i<4;i++) mesh(new THREE.CapsuleGeometry(.008,.07,3,6),sk,-.027+i*.018,.69,0,{parent:floodHand,rx:.2}); }
+
+function bigOff(){ for(const P of PORTALS){ P.on=false; P.mesh.visible=false; } woodsLight.intensity=0; HALL.on=false; corrMon.visible=false; hallLights.forEach(l=>l.intensity=0); HALL.cols.forEach(c=>c.on=false);
+  FLOOD.on=false; waterMesh.visible=false; floodHand.visible=false; if(player.pos.y<-20){ player.pos.set(6.5,0,-5.5); prevP.copy(player.pos); PT.prev.copy(player.pos); } }
+anomaly('endless','aisles',2,'The middle aisle went on forever. Walking to the end put you back at the start.',()=>{ aisleP.on=true; },{big:true});
+anomaly('repeat','front',3,'The front windows looked into the store again. Walking out the front door brought you back inside.',()=>{ buildP.on=true; },{big:true});
+anomaly('portal','aisles',3,'A glowing hole hung in the first aisle. Through it were the woods behind the store, and something standing in them.',()=>{ woodsP.on=true; woodsLight.intensity=5; manPlace(man.g,-2.3,-28.6,0); man.mode='still'; },{big:true});
+anomaly('hallway','back',3,'The back room doorway opened onto a long hallway that was not there before.',()=>{ hallP.on=true; HALL.on=true; HALL.step=1; },{big:true});
+anomaly('flood','office',2,'The office was flooded with black water. Something was moving under it.',()=>{ FLOOD.on=true; FLOOD.lvl=.3; waterMesh.visible=true; },{big:true});
+anomaly('ceiling','aisles',2,'Everything on the chip aisle was hanging from the ceiling.',()=>{ for(const r of PRODUCTS) if(r.tag.g===0){ const e=r.base.elements, x0=e[12], z0=e[14]; _m.makeTranslation(x0,H,z0).multiply(_r.makeRotationX(Math.PI)).multiply(_t.makeTranslation(-x0,0,-z0)).multiply(r.base); setRec(r,_m); r.dirty=true; } },{big:true});
+GROW.flood=s=>{ FLOOD.lvl=s>=3?.85:.55; };
+GROW.portal=s=>woodsP.mesh.scale.setScalar(s>=3?1.4:1.18);
+MESS.flood=()=>[waterMesh]; MESS.portal=()=>[woodsP.mesh];
+
+let humG=null;
+function updatePortals(dt){ const p=player.pos;
+  if(state==='play'&&!busy) for(const P of PORTALS){ if(P.on&&P.cross&&P.cross(PT.prev,p)){ P.onCross(); break; } }
+  PT.prev.copy(p);
+  // portal hum
+  if(AU.ctx){ if(!humG){ const C=AU.ctx; humG=C.createGain(); humG.gain.value=0; humG.connect(AU.master); for(const f of [55,82.5,111]){ const o=C.createOscillator(); o.type='sine'; o.frequency.value=f; o.connect(humG); o.start(); } }
+    const d=woodsP.on?woodsP.mesh.position.distanceTo(p):99; humG.gain.setTargetAtTime(woodsP.on&&state==='play'?clamp(1-d/9,0,1)*.09:0,AU.ctx.currentTime,.2); }
+  // the hallway
+  HALL.cols.forEach(c=>c.on=p.y<-20);
+  if(HALL.on) hallLights.forEach((l,i)=>l.intensity=Math.random()<.04?0:(i===0?4:3));
+  if(HALL.on&&p.y<-20){ if(ST.mode==='hunt') endHunt();
+    const m=corrMon; if(!m.visible){ m.visible=true; m.position.set(31,-40,-26); }
+    m.rotation.y=Math.atan2(p.x-m.position.x,p.z-m.position.z); animMan(m,0,false);
+    if(!lookingAt(m.position.x,-38.1,m.position.z,.9)){ HALL.step-=dt; if(HALL.step<=0){ HALL.step=1.1; const dz=p.z-m.position.z; m.position.z+=Math.sign(dz)*Math.min(Math.abs(dz)-.6,1.6); tone(60,.25,{gain:.35,slide:40,pan:panAt(m.position.x,m.position.z)}); } }
+    if(Math.hypot(p.x-m.position.x,p.z-m.position.z)<1.3){ m.position.set(31,-40,-26); if(S.scares){ sfx.scare(); grade.uniforms.uRed.value=.45; setTimeout(()=>grade.uniforms.uRed.value=0,350); } player.shake=1.4; fear=Math.min(100,fear+25); player.pos.set(4.5,0,-1.4); player.yaw=0; prevP.copy(player.pos); PT.prev.copy(player.pos); toast('You stumble back out of the doorway.',3); }
+    else if(p.z<-27.2){ player.pos.set(6.5,0,-5.5); prevP.copy(player.pos); PT.prev.copy(player.pos); sfx.creak(); toast('The door at the end opens into the back room.',3); } }
+  else { corrMon.visible=false; if(!HALL.on) hallLights.forEach(l=>l.intensity=0); }
+  // the flood
+  if(FLOOD.on){ waterN.offset.x+=dt*.02; waterN.offset.y+=dt*.013; waterMesh.position.y=lerp(waterMesh.position.y,FLOOD.lvl,dt*.5);
+    if(inOffice()&&state==='play'){ FLOOD.splT-=dt; if(player.moving&&FLOOD.splT<=0){ FLOOD.splT=.42; burst2(.25,{f:900,q:.8,gain:.18}); burst2(.15,{f:2500,q:1,gain:.08,when:.05}); }
+      FLOOD.handT-=dt; if(FLOOD.handT<=0&&!floodHand.visible){ FLOOD.handT=4+Math.random()*5; const a=Math.random()*6.28, r=1.6+Math.random()*1.2; floodHand.position.set(clamp(p.x+Math.cos(a)*r,-9.6,-5.4),0,clamp(p.z+Math.sin(a)*r,-7.6,-3.4)); floodHand.visible=true; FLOOD.hand=0; } }
+    if(floodHand.visible){ FLOOD.hand+=dt; const k=FLOOD.hand/2.2; floodHand.position.y=waterMesh.position.y-.62+Math.sin(Math.min(1,k)*Math.PI)*.62; floodHand.rotation.z=Math.sin(gt*5)*.1; if(k>=1) floodHand.visible=false; } } }
 
 /* ============================== INPUT ============================== */
 addEventListener('keydown',e=>{
@@ -3075,12 +3182,12 @@ function frame(){
   updateLights(dt); updateAudio(dt);
   rainMat.uniforms.uTime.value=gt; rainMat.uniforms.uCam.value.copy(camera.position);
   grade.uniforms.uTime.value=gt; grade.uniforms.uFear.value=tension*tension*.9; grade.uniforms.uFlash.value=lightning*lightning*.12;
-  if(state==='play'&&inOffice()&&frameN%3===0){ renderer.setRenderTarget(secRT); renderer.render(scene,secCam); renderer.setRenderTarget(null); }
-  camFrame();
+  if(state==='play'&&inOffice()&&frameN%3===0){ const pv=PORTALS.map(p=>p.mesh.visible); PORTALS.forEach(p=>p.mesh.visible=false); renderer.setRenderTarget(secRT); renderer.render(scene,secCam); PORTALS.forEach((p,i)=>p.mesh.visible=pv[i]); renderer.setRenderTarget(null); }
+  camFrame(); renderPortals();
   composer.render();
 }
 frame();
-window.__kc={ get night(){return night}, set night(v){night=v}, get phase(){return phase}, startChores, clockIn, CH, spawnStalker, startHunt, ST, openCams, camExit, PH, answerPhone, win, get power(){return power}, set power(v){power=v}, get fear(){return fear}, set fear(v){fear=v}, UP, IA, setupHour, get hourN(){return hour}, set hourN(v){hour=v}, S, applySettings, get custPending(){return custPending()}, endHour, strikeEvent, blackOut, info:()=>({calls:renderer.info.render.calls}), set dtMax(v){DTMAX=v}, set tscale(v){TSCALE=v}, setState(v){state=v}, get state(){return state}, keys, player, A, PRODUCTS, resetWorld, apply(id){ resetWorld(); const a=A.find(x=>x.id===id); current=a; a&&a.apply(); }, get current(){return current}, get hour(){return hour}, get minute(){return minute}, set minute(v){minute=v}, get money(){return money}, get strikes(){return strikes}, customers, spawnCustomer, openRegister, logPrompt, pickChoice, closeNote, openNote, IA, cam:camera, man, car, monster, runSetPiece, SPC, PR, FOL, ESC, startBreak, get busy(){return busy}, get uiOpen(){return uiOpen}, get event(){return hourEvent}, set event(v){hourEvent=v}, setHold, get reg(){return reg} };
+window.__kc={ get night(){return night}, set night(v){night=v}, get phase(){return phase}, startChores, clockIn, CH, spawnStalker, startHunt, ST, openCams, camExit, PH, answerPhone, win, get power(){return power}, set power(v){power=v}, get fear(){return fear}, set fear(v){fear=v}, UP, IA, setupHour, get hourN(){return hour}, set hourN(v){hour=v}, S, applySettings, get custPending(){return custPending()}, endHour, strikeEvent, blackOut, info:()=>({calls:renderer.info.render.calls}), set dtMax(v){DTMAX=v}, set tscale(v){TSCALE=v}, setState(v){state=v}, get state(){return state}, keys, player, A, PRODUCTS, resetWorld, apply(id){ resetWorld(); const a=A.find(x=>x.id===id); current=a; a&&a.apply(); }, get current(){return current}, get hour(){return hour}, get minute(){return minute}, set minute(v){minute=v}, get money(){return money}, get strikes(){return strikes}, customers, spawnCustomer, openRegister, logPrompt, pickChoice, closeNote, openNote, IA, cam:camera, man, car, monster, runSetPiece, SPC, PR, FOL, ESC, startBreak, PORTALS, get busy(){return busy}, get uiOpen(){return uiOpen}, get event(){return hourEvent}, set event(v){hourEvent=v}, setHold, get reg(){return reg} };
 </script>
 </body>
 </html>

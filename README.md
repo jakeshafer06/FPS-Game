@@ -13,6 +13,17 @@ An endless first-person night-shift horror game that runs in the browser. It's O
 - **Leave the anomalies alone:** touch something that's wrong too many times and it notices. You'll get a hunt, a hiding event, or a strike.
 - **Sound captions:** every important sound pops up as text, like *brrrring* for the phone, with an arrow showing which way it came from. Turn them off in Settings → Audio.
 
+## What's new in 5.1
+
+- **Bigger, stranger anomalies** that you walk into:
+  - **The endless aisle:** the middle aisle goes on forever, and walking to the end puts you back at the start.
+  - **The store repeats:** the front windows look into the store again, and walking out the front door brings you back inside.
+  - **A portal** hangs in the first aisle. Through it are the woods behind the store, and something standing in them. You can step through.
+  - **The hallway:** the back room doorway opens onto a long corridor that shouldn't exist, with something at the far end that moves when you look away.
+  - **The flood:** the office is full of black water, and something moves under it.
+  - **The ceiling:** everything on the chip aisle hangs from the ceiling.
+- On nights 1 and 2, two customers come in together each hour, and one waits in line.
+
 ## What's new in 5.0
 
 - **The thing in the store is always there.** Early in the night you only hear it. Later it watches you. By the last hours it hunts. It follows sound (running, slamming doors, the phone), learns where you spend your time, imitates voices to lure you, and creeps closer while you watch the cameras.
