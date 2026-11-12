@@ -1,14 +1,15 @@
 # Kettle Creek
 
-A first-person night-shift anomaly game that runs in the browser. It's October 2012 and you're working the overnight shift alone at the Kettle Creek Gas & Go on Route 41. The owner left you a sheet of rules.
+An endless first-person night-shift horror game that runs in the browser. It's October 2012 and you work the overnight shift at the Kettle Creek Gas & Go on Route 41. Every night is harder than the last. You have one life.
 
-- **Serve customers.** Talk to them, scan what they put on the counter, fetch what they ask for (cigarettes, coffee, hot dogs, pump prepay), and take card or cash.
-- **Spot fake customers.** Some customers aren't people. Learn the tells and refuse service.
-- **Log every hour.** Walk the store and decide if anything has changed. Log ALL CLEAR, or REPORT and say where. You have until :59.
-- **Follow the rules.** Lights out? Hide in the office. Everything quiet? Don't move. Don't open the back door when someone knocks.
-- **Three strikes** and the store locks down. Get the keys, restore the power, and escape while something hunts you. Make it to 6:00 AM for a summary of your shift.
-
-There are 40 anomalies, from subtle (a missing bottle, the wrong date on a calendar) to dangerous. Anomalies you find are remembered between nights.
+- **Before each shift:** do your chores (restock, trash, mop, coffee, ice machine, generator), then clock in.
+- **During the shift:** serve customers, spot the fakes, and log every hour (ALL CLEAR, or REPORT and say where).
+- **Keep the store running:** feed the generator, swap flashlight batteries, answer the phone, shut off fuel spills, watch the security cameras, and lock the doors.
+- **Survive:** something stalks the store. It peeks from the dark, creeps closer on the cameras, and sometimes hunts you. Crouch behind the shelves or hide in the office. If it catches you, the run is over.
+- **Fear:** darkness and scares raise your fear. High fear brings hallucinations. Coffee helps.
+- **The store gets lost:** doors open onto the wrong places and aisles stretch on.
+- **Between nights:** see your mistakes and spend your pay on upgrades.
+- **The story:** find a note each night to learn what happened to Carla Wren.
 
 ## Play
 
@@ -48,6 +49,8 @@ The included `netlify.toml` tells Netlify there is no build step and to publish 
 | F | Phone flashlight |
 | Q | Drop what you are holding |
 | C | Crouch |
+| V | Drink the coffee you're holding |
+| A / D | Switch security cameras |
 | R | Read Ray's rules |
 | 1 to 7 | Choose an option |
 | Space | Skip a line |

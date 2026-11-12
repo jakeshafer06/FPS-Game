@@ -1,7 +1,7 @@
 {
   "name": "kettle-creek",
-  "version": "3.0.0",
-  "description": "A first-person gas station anomaly horror game that runs in the browser.",
+  "version": "4.0.0",
+  "description": "An endless first-person night-shift horror game that runs in the browser.",
   "private": true,
   "scripts": {
     "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('index.html','dist/index.html');console.log('Copied index.html to dist/')\"",
