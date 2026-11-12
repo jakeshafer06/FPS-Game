@@ -220,7 +220,7 @@ body.photo #hud,body.photo #sfxcap{display:none!important}
     <p class="sub">Kettle Creek Gas &amp; Go · Rt 41</p>
     <ol>
       <li>Every hour, log the store in the logbook by the register before the hour runs out. ALL CLEAR if nothing is different. REPORT if something is, and say where.</li>
-      <li>Walk the whole store before you log. Aisles, coolers, coffee, the back room, the office. Look out at the lot.</li>
+      <li>Walk the whole store before you log. Aisles, coolers, coffee, the back room, the office.</li>
       <li>A wrong log, a missed hour, or a broken rule is a strike. Three strikes and you're done for the night.</li>
       <li>Serve every customer. Ring up what they bring, get them what they ask for, and count their change right.</li>
       <li>Real customers come in the front door, and the bell rings. It's pouring, so they're soaked and dripping. They blink. They sound normal.</li>
@@ -254,7 +254,7 @@ body.photo #hud,body.photo #sfxcap{display:none!important}
       <button class="btn ghost" id="titleSettings">Settings</button>
     </div>
     <div class="keys"><kbd>W A S D</kbd> move &nbsp; <kbd>Shift</kbd> run &nbsp; <kbd>E</kbd> / click interact &nbsp; <kbd>F</kbd> flashlight &nbsp; <kbd>Q</kbd> drop item &nbsp; <kbd>C</kbd> crouch &nbsp; <kbd>V</kbd> drink coffee &nbsp; <kbd>R</kbd> rules<br><kbd>1</kbd>–<kbd>7</kbd> choose &nbsp; <kbd>Space</kbd> skip &nbsp; <kbd>Esc</kbd> pause · Headphones recommended</div>
-    <div class="keys" id="ver">Version 4.3 · Best run: <span id="bestTitle">0</span> nights · Anomalies found: <span id="foundTitle">0</span></div>
+    <div class="keys" id="ver">Version 4.5 · Best run: <span id="bestTitle">0</span> nights · Anomalies found: <span id="foundTitle">0</span></div>
     <div id="mobile">Needs a keyboard and mouse. Open this on a desktop computer.</div>
   </div>
 </section>
@@ -1204,13 +1204,13 @@ function updatePlayer(dt){
   const f=new V3(-Math.sin(player.yaw),0,-Math.cos(player.yaw)), r=new V3(Math.cos(player.yaw),0,-Math.sin(player.yaw));
   const mv=new V3(); if(player.canMove && !noteOpen && !uiOpen && camMode<0){ if(keys.KeyW||keys.ArrowUp) mv.add(f); if(keys.KeyS||keys.ArrowDown) mv.sub(f); if(keys.KeyD||keys.ArrowRight) mv.add(r); if(keys.KeyA||keys.ArrowLeft) mv.sub(r); }
   player.crouch=!!(keys.KeyC||keys.ControlLeft); player.h=lerp(player.h,DEV.tiny?.24:DEV.reverse?2.15:player.crouch?1.0:1.62,Math.min(1,dt*10));
-  const run=(keys.ShiftLeft||keys.ShiftRight)&&!player.crouch; const sp=(player.crouch?1.15:(run?4.4:2.3))*(DEV.tiny?.55:1); const moving=mv.lengthSq()>0; player.moving=moving; player.running=run&&moving;
+  const run=(keys.ShiftLeft||keys.ShiftRight)&&!player.crouch; const sp=(player.crouch?1.15:(run?4.4:2.3))*(DEV.tiny?.55:1)*(DEV.speed?2.6:1); const moving=mv.lengthSq()>0; player.moving=moving; player.running=run&&moving;
   if(moving){ mv.normalize().multiplyScalar(sp*dt); const before=player.pos.clone(); player.pos.add(mv); resolve(player.pos,player.r); player.pos.x=clamp(player.pos.x,-40,45); player.pos.z=clamp(player.pos.z,-32,40);
     const dist=player.pos.distanceTo(before); const pb=player.bob; player.bob+=dist*(run?2.1:2.6); if(Math.floor(pb/Math.PI)!==Math.floor(player.bob/Math.PI)){ sfx.step(!isInside(player.pos)); if(W.follow>0) setTimeout(()=>sfx.step(false,.55),300); } }
   player.inside=isInside(player.pos);
   const bobAmt=moving&&S.bob?(run?.05:.032):0; const t=performance.now()/1000; const breathe=Math.sin(t*1.6)*.006*(1+tension*2);
   const sh=player.shake; player.shake=Math.max(0,sh-dt*1.8);
-  camera.position.set(player.pos.x+(Math.random()-.5)*sh*.06, player.h+Math.sin(player.bob*2)*bobAmt*.5+breathe+(Math.random()-.5)*sh*.06, player.pos.z);
+  camera.position.set(player.pos.x+(Math.random()-.5)*sh*.06, player.pos.y+player.h+Math.sin(player.bob*2)*bobAmt*.5+breathe+(Math.random()-.5)*sh*.06, player.pos.z);
   camera.rotation.set(player.pitch+(Math.random()-.5)*sh*.02, player.yaw, Math.sin(player.bob)*bobAmt*.15);
 }
 function lerpAngle(a,b,t){ let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI; return a+d*clamp(t,0,1); }
@@ -1227,7 +1227,7 @@ function updateDoors(dt){
 // W holds every changeable piece of world state; resetWorld() puts all of it back to normal.
 const W = { clockDir:1, clockFixed:null, float:false, angel:false, knock:false, phoneOff:false, armSway:false, silence:false };
 // developer cheats (see the DEVELOPER section near the end)
-const DEV={god:false,fly:false,freeze:false,clockMul:1,ignore:false,pet:false,party:false,soda:false,bigHead:false,tiny:false,throw:false,photo:false,reverse:false,slow:false,track:'song',thrown:[]};
+const DEV={god:false,fly:false,freeze:false,clockMul:1,ignore:false,pet:false,party:false,soda:false,bigHead:false,tiny:false,throw:false,photo:false,reverse:false,slow:false,track:'song',thrown:[],gun:false,boom:false,speed:false,moon:false,nv:false,giant:false};
 let lightning=0;
 function setEm(m,t){ m.emissiveMap=t; m.needsUpdate=true; }
 const openItem = grid.items.find(i=>i.m===openSign);
@@ -1256,7 +1256,7 @@ function resetWorld(){
   player.flash=false; targetTension=0;
 }
 // Areas the player can report. An anomaly lists every area where it can be seen.
-const AREAS=[['front','Counter & front windows'],['aisles','Aisles'],['drinks','Coolers, coffee & hot dogs'],['back','Back room'],['office','Office'],['outside','Outside & lot']];
+const AREAS=[['front','Counter & front windows'],['aisles','Aisles'],['drinks','Coolers, coffee & hot dogs'],['back','Back room'],['office','Office']];
 const A=[]; const anomaly=(id,areas,tier,desc,apply,o={})=>A.push({id,areas:[].concat(areas),tier,desc,apply,...o});
 // tier 1: subtle, early hours · tier 2: clearly wrong · tier 3: disturbing, late hours
 anomaly('missingrow','drinks',1,'Three bottles were missing from the front of a cooler shelf.',()=>{ for(const r of missingRow){ _m.makeScale(.0001,.0001,.0001); setRec(r,_m); r.dirty=true; } });
@@ -1264,7 +1264,6 @@ anomaly('clockoff','drinks',1,'The wall clock by the back room showed the wrong 
 anomaly('coldred','drinks',1,'The ICE COLD DRINKS sign over the coolers was red instead of blue.',()=>setEm(coldHdr,T.coldRed));
 anomaly('wetsign',['aisles','drinks'],1,'The wet floor sign had moved into the middle aisle.',()=>{ wetSign.position.set(.4+1.9,0,1.8); wetSign.rotation.y=1.2; });
 anomaly('mop','back',1,'The mop bucket was gone from the back room.',()=>mopBucket.visible=false);
-anomaly('dumpster','outside',1,'The dumpster lid behind the store was standing open.',()=>{ dumpLid.rotation.x=-1.25; dumpLid.position.y=1.9; });
 anomaly('chairturn','office',1,'The office chair was turned to face the wall.',()=>{ officeChair.rotation.y=Math.PI*.5; });
 anomaly('calendar','office',1,'The office calendar said October 1987.',()=>{ calMat.map=T.cal87; calMat.needsUpdate=true; });
 anomaly('atm','front',1,'The ATM screen by the front door was dark.',()=>setEm(atmMat,T.atmOff));
@@ -1273,15 +1272,11 @@ anomaly('nohotdogs',['drinks','front'],1,'The hot dog rollers were empty.',()=>h
 anomaly('twobags','back',1,'There were two trash bags by the back door instead of one.',()=>bagNormal2.visible=true);
 anomaly('monitoroff','office',1,'The security monitor in the office was off.',()=>screenMat.color.setHex(0x050505));
 anomaly('backwards','aisles',1,'Every product on the middle aisle was turned to face the wall.',()=>{ for(const r of PRODUCTS) if(r.tag.g===1){ _m.copy(r.base).multiply(_r.makeRotationY(Math.PI)); setRec(r,_m); r.dirty=true; } });
-anomaly('canopy','outside',1,'The lights over the gas pumps were off.',()=>grid.off.add('canopy'));
 anomaly('office','office',1,'The office door was shut and locked from the inside.',()=>{ officeDoor.target=0; officeDoor.locked=true; });
 anomaly('cooler','drinks',1,'A cooler door was standing open.',()=>{ coolerDoors[4].rotation.y=1.2; });
 anomaly('exit','front',2,'The exit sign over the front door said STAY.',()=>setEm(exitFront,T.stay));
 anomaly('poster','front',2,'The missing poster by the door had your name and face on it.',()=>{ posterMat.map=T.missingSam; posterMat.needsUpdate=true; });
 anomaly('clock','drinks',2,'The wall clock by the back room was running backwards.',()=>W.clockDir=-40);
-anomaly('rain','outside',2,'The rain outside was falling up.',()=>rainMat.uniforms.uDir.value=-1);
-anomaly('prices','outside',2,'Every price on the road sign read 6.66.',()=>setEm(priceMat,T.priceEvil));
-anomaly('sign','outside',2,'The sign over the windows said GAS & GONE.',()=>setEm(signMat,T.signGone));
 anomaly('red','aisles',2,'One of the ceiling lights over the aisles glowed red.',()=>{ panelRed.emissive.setHex(0xff1a0a); Lred.intensity=6; });
 anomaly('float','drinks',2,'The bottles in the middle cooler door were floating.',()=>W.float=true);
 anomaly('upside','aisles',2,'Everything on the aisle nearest the back room was upside down.',()=>{ for(const r of PRODUCTS) if(r.tag.g===2){ _m.copy(r.base).multiply(_t.makeTranslation(0,r.h,0)).multiply(_r.makeRotationZ(Math.PI)); setRec(r,_m); r.dirty=true; } });
@@ -1289,12 +1284,10 @@ anomaly('giant','front',2,'The soda can on the counter was enormous.',()=>{ coun
 anomaly('phone','front',2,'The phone behind the counter was off the hook.',()=>{ W.phoneOff=true; handset.position.set(.02,-.7,0); handset.rotation.z=.3; cord.visible=false; cordHang.visible=true; });
 anomaly('bags','drinks',2,'A pile of trash bags was sitting in front of the coolers.',()=>bagPile.visible=true);
 anomaly('bagcounter','front',2,'A trash bag was sitting on the counter.',()=>bagCounter.visible=true);
-anomaly('car','outside',2,'A grey car sat at the pumps with its headlights on. Nobody was in it.',()=>{ car.g.visible=true; car.lights=true; car.engine=true; car.col.on=true; });
 anomaly('hotdogs',['drinks','front'],3,'The hot dogs on the rollers were fingers.',()=>hotdogMat.color.setHex(0xcfb3a0));
 anomaly('chair',['aisles','front'],3,'The office chair was in the middle of the store, facing the counter.',()=>{ officeChair.position.set(2.3,0,5.6); officeChair.rotation.y=Math.PI*.42; });
 anomaly('footprints',['front','aisles','office'],3,'Wet footprints led from the front door to the office.',()=>footprints.visible=true);
 anomaly('arm','aisles',3,'An arm was hanging out of the ceiling over the aisle.',()=>{ ceilingArm.visible=true; W.armSway=true; });
-anomaly('pumpman','outside',3,'A man was standing at the pumps in the rain, watching the store.',()=>{ manPlace(man.g,-2.2,16.8,0); man.mode='still'; });
 anomaly('camera','office',3,'The security monitor showed someone standing behind the counter.',()=>{ manPlace(manCam,-8.8,6.6,Math.PI*.8); });
 anomaly('register','front',3,'The register screen said HE IS STILL HERE.',()=>setEm(register.screen,T.posEvil));
 anomaly('angel',['aisles','drinks'],3,'Someone was standing in the aisle. Every time you looked away, he got closer.',()=>{ manPlace(man.g,2.3,-1.3,0); man.mode='angel'; W.angel=true; targetTension=.6; },{hostile:true});
@@ -1343,9 +1336,9 @@ const custPending=()=>custLeft+customers.filter(c=>['walk','idle','talking','sca
 const custObjText=()=>`Serve every customer (${custTotal-custPending()}/${custTotal})`;
 function reqLabel(r){ return r.type==='cig'?`Pack of ${CIGS[r.brand]}`:r.type==='coffee'?'Large coffee':r.type==='hotdog'?'Hot dog':r.type==='pump'?`$${r.amount} on pump ${r.pump}`:r.name; }
 function reqPrice(r){ return r.type==='pump'?r.amount:(REQ_PRICE[r.type]||0); }
-function spawnCustomer(){
+function spawnCustomer(forceFake){
   const fakeChance = night===1&&hour===0?0:Math.min(.6,.12+hour*.05+(night-1)*.06);
-  const fake = Math.random()<fakeChance;
+  const fake = forceFake!==undefined?forceFake:Math.random()<fakeChance;
   const tells=new Set(); let look=randLook();
   if(fake){ const opts=['nochime','item','back']; if(servedLooks.length) opts.push('twice'); tells.add('still'); if(night<3||Math.random()<.5) tells.add('dry'); tells.add(rpick(opts)); if(tells.has('twice')) look={...rpick(servedLooks)}; }
   const wet=!tells.has('dry');
@@ -1458,7 +1451,7 @@ $('#regDone').onclick=async()=>{ if(!reg) return; const c=reg.c; if(!regReady(c)
 };
 $('#regAway').onclick=()=>closeRegister(true);
 $('#regRefuse').onclick=()=>{ if(!reg) return; const c=reg.c; closeRegister(true);
-  if(c.fake){ money+=10; updatePay(); sendAway(c,true); toast('It stopped smiling and walked into the back room. (+$10)',4); }
+  if(c.fake){ const hd=c.g.userData.head; if(hd) hd.rotation.y=Math.PI; sfx.sting(); money+=10; updatePay(); sendAway(c,true); toast('It stopped smiling and walked into the back room. (+$10)',4); }
   else { money-=15; updatePay(); sendAway(c,false); mistake('Refused service to a real customer.'); say('Customer','Unbelievable.',{d:2,voice:c.voice}); toast('You refused a real customer. Complaint (-$15)',4); }
 };
 async function servedFake(c){
@@ -1476,7 +1469,7 @@ const HOUR_SECONDS=210;
 let hour=0, minute=0, timerOn=false, busy=false, logging=false, money=0, strikes=0, nightResets=0, lastId=null, anomStreak=0, clearStreak=0, eventsThisNight=0, warned50=false;
 let hourEvent=null, backDark=false, outsideT=0, backT=0, hushT=0;
 const found=new Set(); let foundAll=new Set();
-try{ foundAll=new Set(JSON.parse(localStorage.getItem('kc-found')||'[]')); }catch(_){}
+try{ foundAll=new Set(JSON.parse(localStorage.getItem('kc-found')||'[]').filter(id=>A.some(a=>a.id===id))); }catch(_){} // drop anomalies that no longer exist
 function saveFound(){ try{ localStorage.setItem('kc-found',JSON.stringify([...foundAll])); }catch(_){} $('#foundTitle').textContent=`${foundAll.size} / ${A.length}`; }
 saveFound();
 const fmtHour = h => `${h===0?12:h}:00 AM`;
@@ -1499,11 +1492,11 @@ function setupHour(first){
   if(first){ player.pos.set(START.x,0,START.z); player.yaw=START.yaw; player.pitch=-.05; } player.lastZ=player.pos.z; prevP.copy(player.pos); messN=0; messWarned=0;
   setClock(); updatePay(); clearObj(); onNewHour(first);
   obj('cust',custObjText());
-  obj('walk','Walk the store: aisles, coolers, back room, office, and the lot outside');
+  obj('walk','Walk the store: aisles, coolers, back room, and office');
   obj('log','Log the hour in the logbook by the register before :59');
 }
 async function logPrompt(){
-  if(busy||logging||uiOpen||custPending()) return; logging=true;
+  if(busy||logging||uiOpen||custPending()||choresPending()) return; logging=true;
   const c=await choose(['ALL CLEAR · nothing is different','REPORT · something is wrong','Keep looking']);
   if(c===2||busy){ logging=false; return; }
   let area=null;
@@ -1521,6 +1514,7 @@ function mistake(t){ mistakes.push({n:night,h:hour,t}); }
 // No loading screen between hours: a short fade, the clock moves on, mistakes are saved for the end-of-shift summary.
 async function endHour(result,msg){
   busy=true; player.canMove=false; cancelChoice(); closeRegister(false); closeNote(); endEvent(true); W.silence=false; hushT=0;
+  if(phase==='shift') for(const c of CH.list) if(!CH.done.has(c)){ money-=5; mistake(`Left a chore undone: ${CHORE_TEXT[c].split('.')[0].toLowerCase()}.`); }
   if(result==='correct') money+=12; else { if(!DEV.god) strikes++; money-=10; mistake(result==='timeout'?'Never logged the hour before it ran out.':msg); }
   updatePay();
   if(strikes>=3){ busy=false; player.canMove=true; return startLockdown(); }
@@ -1528,8 +1522,8 @@ async function endHour(result,msg){
   player.canMove=true; slamBackDoor(); await wait(.25);
   grid.on=false; sfx.dead(); player.shake=Math.max(player.shake,.35); await wait(.55);
   hour++; if(hour>=6){ grid.on=true; busy=false; return win(); }
-  const fl=player.flash; setupHour(false); player.flash=fl; timerOn=true; grade.uniforms.uRed.value=0;
-  grid.flick=.35; setTimeout(()=>{ grid.flick=0; },550); toast(fmtHour(hour),2.5); cap(`*the clock ticks over · ${fmtHour(hour)}*`,{key:'hour'}); busy=false;
+  const fl=player.flash; startBreak(); player.flash=fl; grade.uniforms.uRed.value=0;
+  grid.flick=.35; setTimeout(()=>{ grid.flick=0; },550); toast(`${fmtHour(hour)} · do your chores, then clock back in at the register`,4); cap(`*the clock ticks over · ${fmtHour(hour)}*`,{key:'hour'}); busy=false;
 }
 // The back door swings shut hard and the deadbolt throws itself.
 function slamBackDoor(){
@@ -1612,6 +1606,7 @@ function updateLockdown(dt){
   const m=monster, mp=m.position, pp=player.pos; const dx=pp.x-mp.x, dz=pp.z-mp.z, dist=Math.hypot(dx,dz);
   emergA.intensity=grid.on?0:4+Math.sin(gt*3)*2; emergB.intensity=grid.on?0:3+Math.sin(gt*3)*2;
   if(LD.step===3&&pp.z>10.5) return escaped();
+  if(LD.stun>0){ LD.stun-=dt; animMan(m,0,false); return; }
   const fx=Math.sin(m.rotation.y), fz=Math.cos(m.rotation.y); const facing=(dx*fx+dz*fz)/Math.max(dist,.001);
   const eye=player.crouch?1.0:1.6, range=(player.crouch?5.5:10)+(player.flash?6:0)+(grid.on?2:0);
   const sees=dist<range&&(facing>.42||dist<2)&&!DEV.ignore&&clearLOS(mp.x,mp.z,pp.x,pp.z,eye);
@@ -1692,8 +1687,8 @@ const ghost=ghostMat;
 const logbook=new THREE.Group(); logbook.position.set(-6.9,1.025,5.1); logbook.rotation.y=-.2; scene.add(logbook);
 box(.24,.012,.32,std({color:0x6a4a2a,roughness:.7}),0,.006,0,{parent:logbook,uv:0}); box(.21,.004,.27,lit(T.rules,{r:.9}),0,.014,.01,{parent:logbook,uv:0}); box(.1,.02,.03,M.steel,0,.02,-.14,{parent:logbook,uv:0});
 const inCashier=()=>player.pos.x<-6.6&&player.pos.z>1.3&&player.pos.z<7.8;
-addIA('logbook',logbook,()=>custPending()?`Logbook · serve ${custPending()} more customer${custPending()>1?'s':''} first`:`Log ${fmtHour(hour)}`,()=>{ if(custPending()){ toast(`Serve every customer before you log the hour. ${custPending()} left.`,3); sfx.click(); return; } logPrompt(); },()=>state==='play'&&!busy&&!logging);
-addIA('register',register,()=>phase==='chores'?'Clock in and start the night':(customers.some(c=>c.state==='waiting')?'Ring up the customer':'Register · scan their items first'),()=>{ if(phase==='chores'){ clockIn(); return; } if(customers.some(c=>c.state==='waiting')) openRegister(); else { toast('Scan every item on the counter first.',2.5); sfx.click(); } },()=>state==='play'&&!busy&&!LD.on&&inCashier()&&(phase==='chores'||customers.some(c=>c.state==='waiting'||c.state==='scanning')));
+addIA('logbook',logbook,()=>custPending()?`Logbook · serve ${custPending()} more customer${custPending()>1?'s':''} first`:choresPending()?`Logbook · finish ${choresPending()} more chore${choresPending()>1?'s':''} first`:`Log ${fmtHour(hour)}`,()=>{ if(custPending()){ toast(`Serve every customer before you log the hour. ${custPending()} left.`,3); sfx.click(); return; } if(choresPending()){ toast(`Finish this hour's chores before you log it. ${choresPending()} left.`,3); sfx.click(); return; } logPrompt(); },()=>state==='play'&&!busy&&!logging&&phase==='shift');
+addIA('register',register,()=>phase==='chores'?'Clock in and start the night':phase==='break'?(choresPending()?`Clock back in · ${choresPending()} chore${choresPending()>1?'s':''} left`:`Clock back in · start ${fmtHour(hour)}`):(customers.some(c=>c.state==='waiting')?'Ring up the customer':'Register · scan their items first'),()=>{ if(phase==='chores'){ clockIn(); return; } if(phase==='break'){ if(choresPending()){ toast(`Finish your chores first. ${choresPending()} left.`,3); sfx.click(); return; } resumeHour(); return; } if(customers.some(c=>c.state==='waiting')) openRegister(); else { toast('Scan every item on the counter first.',2.5); sfx.click(); } },()=>state==='play'&&!busy&&!LD.on&&inCashier()&&(phase==='chores'||phase==='break'||customers.some(c=>c.state==='waiting'||c.state==='scanning')));
 addIA('note',rulesNote,'Read Ray\'s rules',()=>openNote());
 CIGS.concat(['RANGER']).forEach((name,i)=>{ const b=box(.12,1.1,.6,ghost,-9.66,1.66,4.05+i*.6+.25,{uv:0}); addIA('cig'+i,b,`Take a pack of ${name}`,()=>{ setHold({type:'cig',brand:i%4}); sfx.pickup(); },()=>state==='play'&&!busy); });
 addIA('coffee',box(.5,.6,.5,ghost,-9.6,1.3,3.3,{uv:0}),()=>player.holding&&player.holding.type==='grounds'?'Load the coffee maker':'Pour a large coffee',()=>{ if(player.holding&&player.holding.type==='grounds'){ setHold(null); cap('*coffee maker gurgles*'); burst2(.8,{f:900,q:.6,gain:.2}); choreDone('coffee'); return; } setHold({type:'coffee'}); sfx.pickup(); burst2(1.2,{f:600,q:.5,gain:.15,a:.1}); },()=>state==='play'&&!busy);
@@ -1727,7 +1722,7 @@ async function firstNight(){
   await inner('Fine. Learn the store. Every shelf, every cooler. Then log the hour before it runs out.');
   timerOn=true;
   obj('cust',custObjText());
-  obj('walk','Walk the store: aisles, coolers, back room, office, and the lot outside');
+  obj('walk','Walk the store: aisles, coolers, back room, and office');
   obj('log','Log the hour in the logbook by the register before :59');
 }
 
@@ -1784,9 +1779,9 @@ function updateCreep(dt){
   if(state!=='play'||busy) return;
   if(tension>.5){ heartT-=dt; if(heartT<=0){ sfx.heart(clamp(tension,.4,1)); heartT=60/(68+tension*80); } }
   if(LD.on||uiOpen||!timerOn||(hourEvent&&hourEvent.started&&hourEvent.phase!=='done')) return;
-  creepT-=dt; if(creepT>0) return; creepT=Math.max(18,34+Math.random()*40-hour*4);
-  const r=rpick(['roof','breath','glass','ring','figure','flicker','scream','growl','figure'].concat(night>=2?['warpBack','warpFront','endless','clockSkip','follow','follow','chimeEmpty','callBack','face','face','moved']:['follow','chimeEmpty','face']));
-  if(r==='roof') sfx.roofSteps(); else if(r==='breath') sfx.breath(.8); else if(r==='glass') sfx.glass(); else if(r==='ring') sfx.ringShort(); else if(r==='scream') sfx.scream(.8); else if(r==='growl') sfx.growl(.22,2.4);
+  creepT-=dt; if(creepT>0) return; creepT=Math.max(hour>=5?12:18,(34+Math.random()*40-hour*4)*(hour>=5?.65:1));
+  const r=rpick(['roof','breath','glass','ring','figure','flicker','growl','figure','aisleRun','coolerSlam'].concat(night>=2?['lightsChase','behindYou','flickScare','aisleRun']:[]).concat(night>=2?['warpBack','warpFront','endless','clockSkip','follow','follow','chimeEmpty','callBack','face','face','moved']:['follow','chimeEmpty','face']));
+  if(r==='roof') sfx.roofSteps(); else if(r==='breath') sfx.breath(.8); else if(r==='glass') sfx.glass(); else if(r==='ring') sfx.ringShort(); else if(r==='growl') sfx.growl(.22,2.4);
   else if(r==='flicker'){ grid.flick=.6; sfx.click(); setTimeout(()=>grid.flick=0,900); }
   else if(r==='figure'&&!man.g.visible){ manPlace(man.g,-10+Math.random()*22,36.5,Math.PI); man.mode='still'; setTimeout(()=>{ if(man.mode==='still'&&!(current&&current.id==='pumpman')&&!(hourEvent&&hourEvent.started&&hourEvent.phase!=='done')){ man.g.visible=false; man.mode='hidden'; } },6500); }
   else creepExtra(r);
@@ -1868,15 +1863,34 @@ function reviveLights(){ for(const i of grid.items) if(trofMats.includes(i.m)) i
 /* ---------- chores before the shift ---------- */
 const CH={list:[],done:new Set()};
 const CHORE_TEXT={restock:'Restock the cooler with a crate from the back room',trash:'Take the trash bag by the back door out to the dumpster',mop:'Mop up the spill in the aisles (hold E)',coffee:'Bring a bag of coffee from the back room to the coffee maker',ice:'Restart the ice machine out front (hold E)',gen:'Fill the generator out back. The gas can is in the back room'};
-const choreCrate=new THREE.Group(); choreCrate.position.set(6.3,0,-6.1); scene.add(choreCrate); box(.6,.3,.42,std({color:0x2a5aa8,roughness:.6}),0,.15,0,{parent:choreCrate,uv:0,cast:true}); for(let i=0;i<8;i++) box(.06,.2,.06,std({color:[0xc41a1a,0x1d7c2a,0xf07c00][i%3]}),-.22+(i%4)*.15,.32,-.08+Math.floor(i/4)*.16,{parent:choreCrate,uv:0}); choreCrate.visible=false;
-const grounds=box(.16,.24,.08,std({color:0x5a3a1a,roughness:.8}),5.5,.98,-7.35,{uv:0}); grounds.visible=false;
-HOLDX('crate',choreCrate.clone(),[.05,-.55,-.62],[.15,.2,0]); HOLDX('grounds',grounds.clone(),[.22,-.3,-.45],[0,.4,0]); { const tb=new THREE.Mesh(BAGGEOS[0],M.bag); tb.scale.setScalar(.75); HOLDX('trash',tb,[.3,-.78,-.6]); }
+// a blue plastic bottle crate with slotted sides, holding 12 real labelled bottles
+const choreCrate=new THREE.Group(); choreCrate.position.set(6.3,0,-6.1); scene.add(choreCrate);
+{ const slotTex=textTex(256,96,(g,w,h)=>{ g.fillStyle='#1f55a3'; g.fillRect(0,0,w,h); g.globalCompositeOperation='destination-out'; for(let i=0;i<7;i++){ g.beginPath(); g.roundRect?g.roundRect(14+i*34,18,22,42,6):g.rect(14+i*34,18,22,42); g.fill(); } g.globalCompositeOperation='source-over'; g.fillStyle='rgba(255,255,255,.14)'; g.fillRect(0,0,w,5); txt(g,'BIG BUCK BOTTLING CO.',w/2,80,{size:12,color:'#cfe0ff',font:'"Archivo Black", Impact'}); });
+  const wall=std({map:slotTex,alphaTest:.5,side:THREE.DoubleSide,roughness:.5,envMap:envTex,envMapIntensity:.3}), solid=std({color:0x1f55a3,roughness:.5,envMap:envTex,envMapIntensity:.3});
+  box(.52,.015,.36,solid,0,.0075,0,{parent:choreCrate,uv:0,cast:true});
+  for(const z of [-.18,.18]) box(.52,.2,.012,wall,0,.1,z,{parent:choreCrate,uv:0,cast:true});
+  for(const x of [-.26,.26]) box(.012,.2,.36,wall,x,.1,0,{parent:choreCrate,uv:0,cast:true});
+  for(const x of [-.13,0,.13]) box(.006,.12,.34,solid,x,.06,0,{parent:choreCrate,uv:0}); for(const z of [-.06,.06]) box(.5,.12,.006,solid,0,.06,z,{parent:choreCrate,uv:0});
+  const capCol=[0xe3201b,0xe3201b,0x2a9a3a,0xff7a10,0x3a1a0a,0x111111,0x2a7ad4,0xe3201b];
+  for(let i=0;i<4;i++) for(let j=0;j<3;j++){ const bi=[0,2,3,7][i], x=-.195+i*.13, z=-.12+j*.12;
+    mesh(G.bottle,std({color:BR.soda[bi].liq,roughness:.07,transparent:true,opacity:.88,envMap:envTex,envMapIntensity:1.1}),x,.015,z,{parent:choreCrate,cast:true}); mesh(G.label,MAT.label[bi],x,.015,z,{parent:choreCrate,ry:Math.random()*6}); mesh(G.cap,std({color:capCol[bi],roughness:.4}),x,.015,z,{parent:choreCrate}); } }
+choreCrate.visible=false;
+// a crimped foil bag of ground coffee with a printed label
+const coffeeTex=textTex(256,384,(g,w,h)=>{ vgrad(g,w,h,'#2e1d12','#120a06'); for(let i=0;i<70;i++){ g.fillStyle=`rgba(${120+Math.random()*60},${70+Math.random()*30},30,.5)`; g.beginPath(); g.ellipse(Math.random()*w,h*.72+Math.random()*h*.2,7,10,Math.random()*3,0,7); g.fill(); }
+  g.fillStyle='#b5221a'; g.fillRect(0,h*.28,w,h*.34); g.fillStyle='#d8b04a'; g.fillRect(0,h*.28,w,4); g.fillRect(0,h*.62-4,w,4);
+  txt(g,'KETTLE CREEK',w/2,h*.35,{size:30,color:'#ffe9c9',font:'Oswald, Impact',weight:700}); txt(g,'HOUSE BLEND',w/2,h*.45,{size:34,color:'#fff',font:'"Archivo Black", Impact',maxW:w-30}); txt(g,'GROUND COFFEE · DARK ROAST',w/2,h*.54,{size:12,color:'#ffe9c9',font:'"IBM Plex Mono", monospace',weight:600});
+  g.fillStyle='#0a0604'; g.beginPath(); g.arc(w/2,h*.17,13,0,7); g.fill(); g.strokeStyle='#5a4030'; g.lineWidth=3; g.stroke();
+  txt(g,'NET WT 2 LB (907g)',w/2,h*.93,{size:12,color:'#d8c7a8',font:'"IBM Plex Mono", monospace',weight:600});
+  g.fillStyle='rgba(255,255,255,.15)'; for(let x=0;x<w;x+=6) g.fillRect(x,0,3,16); sheen(g,w,h,.3); });
+const coffeeMat=std({map:coffeeTex,roughness:.38,metalness:.35,envMap:envTex,envMapIntensity:.8});
+const grounds=mesh(bagGeo(.17,.27,.09),[coffeeMat,coffeeMat],5.5,.86,-7.35,{cast:true}); grounds.visible=false;
+HOLDX('crate',choreCrate.clone(),[.05,-.55,-.62],[.15,.2,0]); HOLDX('grounds',grounds.clone(),[.22,-.42,-.45],[0,.4,0]); { const tb=new THREE.Mesh(BAGGEOS[0],M.bag); tb.scale.setScalar(.75); HOLDX('trash',tb,[.3,-.78,-.6]); }
 const spillMat=std({color:0x16200f,roughness:.04,metalness:.2,envMap:envTex,envMapIntensity:1.3,transparent:true,opacity:.78,polygonOffset:true,polygonOffsetFactor:-2});
 const spill=mesh(new THREE.CircleGeometry(.7,24),spillMat,2.3,.024,2.2,{rx:-Math.PI/2}); spill.visible=false;
 const coolerZone=box(7,1.8,.12,ghostMat,-1,1.3,-2.08,{uv:0});
 const dumpZone=box(2.3,1.6,1.6,ghostMat,5.5,.8,-12,{uv:0});
 const iceZone=box(1.5,1.7,1,ghostMat,-7.6,.85,9.05,{uv:0});
-const choreOn=id=>phase==='chores'&&CH.list.includes(id)&&!CH.done.has(id)&&state==='play'&&!busy;
+const choreOn=id=>(phase==='chores'||phase==='break')&&CH.list.includes(id)&&!CH.done.has(id)&&state==='play'&&!busy;
 addIA('crate',choreCrate,'Pick up a crate of drinks',()=>{ choreCrate.visible=false; setHold({type:'crate'}); sfx.pickup(); },()=>choreOn('restock')&&choreCrate.visible&&!player.holding);
 addIA('coolerzone',coolerZone,'Restock the cooler',()=>{ setHold(null); for(let i=0;i<8;i++) tone(2200+Math.random()*1800,.12,{gain:.05,when:i*.09}); choreDone('restock'); },()=>player.holding&&player.holding.type==='crate');
 addIA('trashbag',bagNormal,'Pick up the trash bag',()=>{ bagNormal.visible=false; setHold({type:'trash'}); sfx.pickup(); },()=>choreOn('trash')&&bagNormal.visible&&!player.holding);
@@ -1884,7 +1898,20 @@ addIA('dumpster',dumpZone,'Throw the bag in the dumpster',()=>{ setHold(null); s
 const mopIA=addIA('spill',spill,'Mop the spill (hold E)',()=>{ spill.visible=false; burst2(.8,{f:900,q:.5,gain:.2,a:.1}); choreDone('mop'); },()=>spill.visible&&state==='play'&&!busy); mopIA.hold=2;
 addIA('grounds',grounds,'Take a bag of coffee',()=>{ grounds.visible=false; setHold({type:'grounds'}); sfx.pickup(); },()=>choreOn('coffee')&&grounds.visible&&!player.holding);
 const iceIA=addIA('ice',iceZone,'Restart the ice machine (hold E)',()=>{ cap('*the ice machine hums to life*'); sfx.thud(.4); tone(80,1.5,{type:'sawtooth',gain:.06,slide:120}); choreDone('ice'); },()=>choreOn('ice')); iceIA.hold=3;
-function choreDone(id){ if(!CH.list.includes(id)||CH.done.has(id)) return; CH.done.add(id); done('ch_'+id); sfx.page(); if(CH.list.every(c=>CH.done.has(c))) obj('clockin','All done. Clock in at the register to start the night'); }
+function choreDone(id){ if(!CH.list.includes(id)||CH.done.has(id)) return; CH.done.add(id); done('ch_'+id); sfx.page(); if((phase==='chores'||phase==='break')&&CH.list.every(c=>CH.done.has(c))) obj('clockin',phase==='chores'?'All done. Clock in at the register to start the night':`All done. Clock back in at the register to start ${fmtHour(hour)}`); }
+// between hours: the clock stops, you do one or two chores, then clock back in to start the next hour
+function startBreak(){ resetWorld(); clearCustomers(); setHold(null); stopStalker(); current=null; current2=null; hourEvent=null; timerOn=false; minute=0; custLeft=0; custTotal=0; phase='break';
+  setClock(); clearObj(); hourChores(true); obj('clockin',`Clock back in at the register to start ${fmtHour(hour)}`); }
+function resumeHour(){ for(const c of CH.list) if(!CH.done.has(c)){ money-=5; mistake(`Skipped a chore: ${CHORE_TEXT[c].split('.')[0].toLowerCase()}.`); } hourChores(false);
+  const fl=player.flash; phase='shift'; setupHour(false); player.flash=fl; timerOn=true; grid.flick=.5; setTimeout(()=>grid.flick=0,450); sfx.beep(); toast(`${fmtHour(hour)} · back on the clock`,2.5); }
+// between hours: one or two chores that must be done before the hour can be logged
+const choresPending=()=>(phase==='shift'||phase==='break')?CH.list.filter(c=>!CH.done.has(c)).length:0;
+function hourChores(on){ setHold(null); if(!on){ CH.list=[]; CH.done=new Set(); choreCrate.visible=false; grounds.visible=false; spill.visible=false; return; }
+  CH.list=shuffle(['restock','trash','mop','coffee','ice','gen']).slice(0,night>=3&&hour>=3?2:1); CH.done=new Set();
+  if(CH.list.includes('gen')) power=Math.min(power,30);
+  spill.visible=CH.list.includes('mop'); if(spill.visible) spill.position.set(rpick([-1.4,2.3,6.6]),.024,.4+Math.random()*3.2);
+  choreCrate.visible=CH.list.includes('restock'); grounds.visible=CH.list.includes('coffee');
+  for(const c of CH.list) obj('ch_'+c,CHORE_TEXT[c]); }
 async function startChores(){
   night++; phase='chores'; if(AU.ctx) restartSong(); strikes=0; updatePay(); nightLook(); resetWorld(); clearCustomers(); setHold(null); stopStalker(); reviveLights(); camExit();
   power=100; powerOut=false; battery=Math.max(battery,60); fear=0; backDoor.locked=true; userLocked=false; hour=0; minute=0; timerOn=false; current=null; current2=null; hourEvent=null; LD.on=false; monster.visible=false; PH.carlaDone=false; PH.ringing=false; PH.next=50;
@@ -1957,6 +1984,7 @@ async function answerPhone(){
   if(c.breath){ sfx.breath(1.2); fear=Math.min(100,fear+15); }
   for(const l of c.lines){ await say(c.who,l,{voice:l==='...'?null:c.voice,d:l==='...'?2.2:undefined}); if(c.breath) sfx.breath(1.3); }
   sfx.click(); PH.inCall=false;
+  if(c.breath&&night>=2&&S.scares&&Math.random()<.4){ sfx.scare(); player.shake=1.2; grade.uniforms.uRed.value=.4; setTimeout(()=>grade.uniforms.uRed.value=0,300); fear=Math.min(100,fear+18); cap('*a shriek through the receiver*',{loud:true}); }
   if(c.watcher){ fear=Math.min(100,fear+10); spawnPeek(true); }
   if(c.trap) PH.trapUntil=gt+75;
 }
@@ -2061,6 +2089,9 @@ const faceMesh=mesh(new THREE.PlaneGeometry(.44,.55),std({map:faceTex,transparen
 const darkEyes=new THREE.Group(); darkEyes.position.set(9.0,1.62,-7.55); scene.add(darkEyes); const eyeM=glow(null,0xfff4d0,6); for(const s of [-1,1]) mesh(new THREE.SphereGeometry(.018,8,6),eyeM,s*.055,0,0,{parent:darkEyes}); darkEyes.visible=false;
 Object.assign(W,{warpBack:false,warpFront:false,endless:0,follow:0,faceT:0,faceLook:0,eyesGone:false});
 function creepExtra(r){
+  if(r==='aisleRun'){ if(scareFree()&&player.inside) aisleRun(); return; } if(r==='coolerSlam'){ if(scareFree()) coolerSlam(); return; }
+  if(r==='lightsChase'){ if(scareFree()&&grid.on&&!powerOut&&player.inside) lightsChase(); return; } if(r==='behindYou'){ if(scareFree()&&player.inside&&radioOn) behindYou(); return; }
+  if(r==='flickScare'){ if(scareFree()&&player.inside&&grid.on&&SC.cool<=0) miniScare(1.15,{dark:true}); return; }
   if(r==='warpBack') W.warpBack=true; else if(r==='warpFront') W.warpFront=true; else if(r==='endless') W.endless=3;
   else if(r==='clockSkip'){ minute=Math.min(57,minute+10); sfx.click(); grid.flick=.5; setTimeout(()=>grid.flick=0,400); }
   else if(r==='follow') W.follow=10; else if(r==='chimeEmpty') sfx.chime();
@@ -2149,10 +2180,8 @@ function messTarget(){
   return hit&&set.has(hit.object)?hit.object:null;
 }
 function messWith(){
-  messN++; fear=Math.min(100,fear+6*messN);
-  if(messN===1){ sfx.creak(); toast('It feels wrong to touch that.',2.5); }
-  else if(messN===2){ sfx.growl(.5,1.6); grid.flick=.3; setTimeout(()=>grid.flick=0,500); toast('Something noticed. Leave it alone.',3); }
-  else { messN=0; punishMess(); }
+  messN++;
+  if(messN>=3){ messN=0; punishMess(); } /* silent until then, so touching things can't be used to test for anomalies */
 }
 function punishMess(){
   const eventFree=!hourEvent||!hourEvent.started||hourEvent.phase==='done';
@@ -2168,7 +2197,7 @@ let knockT=3, hookT=0, angelStep=0;
 function updateHour(dt){
   if(state!=='play'||busy) return;
   if(LD.on){ updateLockdown(dt); return; }
-  if(phase==='chores') return;
+  if(phase==='chores'||phase==='break') return;
   if(timerOn&&!uiOpen&&!DEV.freeze&&!DEV.reverse){ minute+=dt*60/hourSeconds()*DEV.clockMul; }
   if(timerOn&&minute>=50&&!warned50){ warned50=true; toast('Ten minutes left to log the hour.',4); sfx.beep(); }
   if(timerOn&&minute>=60){ endHour('timeout','The hour ran out before you logged it.'); return; }
@@ -2358,16 +2387,16 @@ function cap(text,o={}){
 { // wrap the sound effects so each one captions itself
   const CAPS={
     chime:['*ding-dong*',{at:[2.8,8]}], beep:['*beep*'], slam:['*SLAM*',{loud:true}], scare:['*SCREEEECH*',{loud:true}],
-    knock:['*knock knock knock*',{at:[7.5,-8]}], creak:['*creeeak*'], offhook:['*beep... beep... beep...*',{at:[-9.84,2.4],every:4000}],
+    creak:['*creeeak*'], 
     thud:['*thud*',{every:1200}], drawer:['*cha-ching*'], keys:['*keys jingle*'], glass:['*tap tap on the glass*'], bang:['*BANG*',{loud:true,every:900}],
     dead:['*CLUNK* · the power cuts out',{loud:true}], breaker:['*CLACK*'], rattle:['*the handle rattles*'], bolt:['*ka-chunk* · the bolt slides home'],
     sting:['*a shrill hiss*',{loud:true}], sip:['*slurp*'], thrum:['*a deep thrum shakes the store*'], roar:['*ROAAAR*',{loud:true,every:1500}],
     growl:['*a low growl*',{every:3000}], heart:['*thump-thump*',{every:4000}], breath:['*heavy breathing*',{every:3000}],
-    scream:['*a distant scream*'], roofSteps:['*footsteps on the roof*',{hold:3500}], ringShort:['*brrring* · the phone? nobody is calling',{hold:2600}],
+    roofSteps:['*footsteps on the roof*',{hold:3500}], ringShort:['*brrring* · the phone? nobody is calling',{hold:2600}],
   };
   for(const [k,[text,o={}]] of Object.entries(CAPS)){ const f=sfx[k]; if(f) sfx[k]=(...a)=>{ cap(text,{key:k,...o}); return f(...a); }; }
   const thunder=sfx.thunder; sfx.thunder=(d=0)=>{ cap('*thunder rumbles*',{key:'thunder',delay:d}); return thunder(d); };
-  const step=sfx.step; sfx.step=(out,v)=>{ if(v!==undefined) cap('*footsteps behind you*',{key:'steps',every:2500}); return step(out,v); };
+  /* player and anomaly footsteps are not captioned, so a caption never hints at an anomaly */
   const knockAt=sfx.knockAt; sfx.knockAt=(x,z)=>{ cap('*knock knock* · someone at the front door',{key:'knockAt',at:[x,z]}); return knockAt(x,z); };
   const ringAt=sfx.ringAt; sfx.ringAt=(x,z)=>{ cap('*BRRRRING* *BRRRRING*',{key:'ring',at:[x,z],loud:true,every:2500}); return ringAt(x,z); };
 }
@@ -2375,10 +2404,10 @@ function cap(text,o={}){
 /* ============================== DEVELOPER: SECRET ROOM, KEYPAD, CHEAT PANEL ============================== */
 // A room behind the office, locked by a 6-digit keypad. Walking in unlocks the cheat panel: type "developer" anywhere to open it.
 // The door code is stored only as a hash, so it can't be read from this file.
-const DEV_NAME='THE DEVELOPER'; // put your name here and it shows on the plaque, the credits and the DJ shoutout
+const DEV_NAME='Jake Shafer'; // shows on the plaque, the credits and the DJ shoutout
 function cyrb53(str,seed=0){ let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed; for(let i=0,ch;i<str.length;i++){ ch=str.charCodeAt(i); h1=Math.imul(h1^ch,2654435761); h2=Math.imul(h2^ch,1597334677); } h1=Math.imul(h1^(h1>>>16),2246822507); h1^=Math.imul(h2^(h2>>>13),3266489909); h2=Math.imul(h2^(h2>>>16),2246822507); h2^=Math.imul(h1^(h1>>>13),3266489909); return 4294967296*(2097151&h2)+(h1>>>0); }
 const DOOR_HASH=8370771848439251, ROOM_TOKEN='7651299614465187';
-let devUnlocked=false; try{ devUnlocked=localStorage.getItem('kc-dev')===ROOM_TOKEN; }catch(_){}
+let devUnlocked=false; try{ localStorage.removeItem('kc-dev'); }catch(_){} /* the door and the cheats lock again every time the game loads */
 function inDevRoomP(p){ return p.x>-10&&p.x<-5&&p.z<-8.05&&p.z>-12.6; }
 function inDevRoom(){ return inDevRoomP(player.pos); }
 
@@ -2396,13 +2425,13 @@ const kpTex=textTex(64,96,(g,w,h)=>{ g.fillStyle='#1c1d20'; g.fillRect(0,0,w,h);
 const keypadMesh=box(.11,.17,.03,lit(kpTex,{r:.4,m:.3}),-7.0,1.32,-7.885,{uv:0}); keypadMesh.rotation.y=Math.PI; mesh(new THREE.PlaneGeometry(.11,.17),glow(kpTex,0xffffff,.5),-7.0,1.32,-7.868,{});
 // plaque, credits, terminal, trophy shelf, jukebox, disco ball, monster bed
 const DNAME=DEV_NAME;
-mesh(new THREE.PlaneGeometry(1.7,.52),lit(textTex(560,170,(g,w,h)=>{ g.fillStyle='#3b2414'; g.fillRect(0,0,w,h); g.strokeStyle='#c9a24a'; g.lineWidth=6; g.strokeRect(10,10,w-20,h-20); txt(g,"DEVELOPER'S OFFICE",w/2,64,{size:54,color:'#e8c76a',font:'Oswald, Impact',weight:700}); txt(g,"AUTHORIZED PERSONNEL ONLY · RAY DOESN'T KNOW THIS ROOM EXISTS",w/2,122,{size:16,color:'#c9a24a',font:'"IBM Plex Mono", monospace',weight:600,maxW:w-50}); }),{r:.4,m:.4,e:.6}),-7.5,2.25,-12.48);
-mesh(new THREE.PlaneGeometry(.9,1.25),lit(textTex(300,420,(g,w,h)=>{ g.fillStyle='#0d0f10'; g.fillRect(0,0,w,h); txt(g,'KETTLE CREEK',w/2,50,{size:40,color:'#ffe9c9',font:'Oswald, Impact',weight:700}); txt(g,'A GAME BY',w/2,100,{size:14,color:'#9a9483',font:'"IBM Plex Mono", monospace'}); txt(g,DNAME,w/2,130,{size:26,color:'#ff3b2a',font:'Oswald, Impact',weight:700,maxW:w-30});
+mesh(new THREE.PlaneGeometry(1.7,.52),lit(textTex(560,170,(g,w,h)=>{ g.fillStyle='#3b2414'; g.fillRect(0,0,w,h); g.strokeStyle='#c9a24a'; g.lineWidth=6; g.strokeRect(10,10,w-20,h-20); txt(g,DNAME.toUpperCase()+"'S OFFICE",w/2,64,{maxW:w-50,size:54,color:'#e8c76a',font:'Oswald, Impact',weight:700}); txt(g,"AUTHORIZED PERSONNEL ONLY · RAY DOESN'T KNOW THIS ROOM EXISTS",w/2,122,{size:16,color:'#c9a24a',font:'"IBM Plex Mono", monospace',weight:600,maxW:w-50}); }),{r:.4,m:.4,e:.6}),-7.5,2.25,-12.48);
+mesh(new THREE.PlaneGeometry(.9,1.25),lit(textTex(300,420,(g,w,h)=>{ g.fillStyle='#0d0f10'; g.fillRect(0,0,w,h); txt(g,'KETTLE CREEK',w/2,50,{size:40,color:'#ffe9c9',font:'Oswald, Impact',weight:700}); txt(g,'A GAME BY',w/2,100,{size:14,color:'#9a9483',font:'"IBM Plex Mono", monospace'}); txt(g,DNAME.toUpperCase(),w/2,130,{size:26,color:'#ff3b2a',font:'Oswald, Impact',weight:700,maxW:w-30});
   [['RADIO','Lofi BG music'],['RAIN','BRS Rain Street City'],['ENGINE','three.js'],['NIGHTS SURVIVED','by you, the boss'],['','THANKS FOR PLAYING']].forEach(([a,b],i)=>{ txt(g,a,w/2,190+i*48,{size:12,color:'#9a9483',font:'"IBM Plex Mono", monospace'}); txt(g,b,w/2,208+i*48,{size:17,color:'#ece6d6',font:'"Special Elite", monospace',maxW:w-30}); }); }),{r:.7}),-5.95,1.5,-12.48);
 box(.7,.76,1.4,M.woodLam,-5.62,.38,-11.3,{uv:1,cast:true}); colliders.push({minX:-5.98,maxX:-5.1,minZ:-12.02,maxZ:-10.58,on:true,top:.8});
 const devTerm=new THREE.Group(); devTerm.position.set(-5.7,.76,-11.3); devTerm.rotation.y=-Math.PI/2; scene.add(devTerm);
 box(.46,.4,.42,M.beige,0,.22,0,{parent:devTerm,uv:0,cast:true});
-mesh(new THREE.PlaneGeometry(.38,.29),glow(textTex(256,192,(g,w,h)=>{ g.fillStyle='#021208'; g.fillRect(0,0,w,h); g.fillStyle='#3dff8c'; g.font='600 15px "IBM Plex Mono", monospace'; g.textAlign='left'; ['KCGG DEV TERMINAL v4.3','','> access: GRANTED','> cheats: ONLINE','','type "developer"','anywhere to open','the panel_'].forEach((l,i)=>g.fillText(l,12,24+i*20)); }),0xffffff,1.2),0,.23,.212,{parent:devTerm});
+mesh(new THREE.PlaneGeometry(.38,.29),glow(textTex(256,192,(g,w,h)=>{ g.fillStyle='#021208'; g.fillRect(0,0,w,h); g.fillStyle='#3dff8c'; g.font='600 15px "IBM Plex Mono", monospace'; g.textAlign='left'; ['KCGG DEV TERMINAL v4.5','','> access: GRANTED','> cheats: ONLINE','','type "developer"','anywhere to open','the panel_'].forEach((l,i)=>g.fillText(l,12,24+i*20)); }),0xffffff,1.2),0,.23,.212,{parent:devTerm});
 const goldM=std({color:0xd8a43a,metalness:.9,roughness:.25,envMap:envTex,envMapIntensity:1.2}), dimM=std({color:0x2c2c2c,roughness:.85});
 const trophyShelf=new THREE.Group(); scene.add(trophyShelf); const trophies=[];
 { const base=new THREE.BoxGeometry(.07,.03,.07); base.translate(0,.015,0); const stem=new THREE.CylinderGeometry(.008,.008,.05,8); stem.translate(0,.055,0); const cup=latheUV([[0,0],[.012,0],[.03,.02],[.035,.06],[0,.06]],12); cup.translate(0,.08,0);
@@ -2422,8 +2451,10 @@ const petCap=new THREE.Group(); monster.add(petCap); petCap.visible=false;
 { const cm=std({color:0xb5221a,roughness:.7}); mesh(new THREE.SphereGeometry(.135,16,8,0,Math.PI*2,0,Math.PI/2),cm,0,1.83,0,{parent:petCap}); mesh(new THREE.BoxGeometry(.21,.016,.14),cm,0,1.84,.15,{parent:petCap}); }
 
 // ---- secret room interactions ----
+const keypadIn=box(.11,.17,.03,lit(kpTex,{r:.4,m:.3}),-7.0,1.32,-8.115,{uv:0}); mesh(new THREE.PlaneGeometry(.11,.17),glow(kpTex,0xffffff,.5),-7.0,1.32,-8.132,{ry:Math.PI}); /* keypad on the inside too */
+addIA('devkeypadin',keypadIn,()=>devDoor.locked?'Keypad · enter the code':null,()=>openKeypad(),()=>devDoor.locked&&state==='play'&&!busy);
 addIA('devkeypad',keypadMesh,()=>devDoor.locked?'Keypad · enter the code':null,()=>openKeypad(),()=>devDoor.locked&&state==='play'&&!busy);
-addIA('devdoor',devDoor.panel,()=>devDoor.locked?'Locked':(devDoor.target>.5?'Close door':'Open door'),()=>{ if(devDoor.locked){ sfx.thud(.3); toast("It's locked. There's a keypad on the wall.",2.5); return; } devDoor.target=devDoor.target>.5?0:devDoor.openAngle; devDoor.target?sfx.creak():sfx.thud(.4); });
+addIA('devdoor',devDoor.panel,()=>devDoor.locked?'Locked':(devDoor.target>.5?'Close door':'Open door'),()=>{ if(devDoor.locked){ sfx.thud(.3); toast("It's locked. Use the keypad next to the door.",2.5); return; } devDoor.target=devDoor.target>.5?0:devDoor.openAngle; devDoor.target?sfx.creak():sfx.thud(.4); });
 addIA('devterm',devTerm,'Use the dev terminal',()=>openDevPanel(),()=>state==='play'&&!busy&&devUnlocked);
 addIA('trophies',trophyShelf,()=>`Trophy shelf · ${foundAll.size} / ${A.length} anomalies found`,()=>{ updateTrophies(); $('#evTitle').textContent='Trophy shelf'; $('#evSub').textContent=`${foundAll.size} of ${A.length} anomalies found · gold means you reported it`; $('#evBody').textContent=A.map(a=>(foundAll.has(a.id)?'★ ':'· ')+(foundAll.has(a.id)?a.desc:'???')).join('\n'); $('#evid').hidden=false; noteOpen=true; sfx.page(); });
 addIA('jukebox',jukebox,()=>`Jukebox · ${trackName()} · E to change`,()=>{ const order=['radio','clean','oldies']; const cur=DEV.track==='oldies'?'oldies':headphones?'clean':'radio'; devTrack(order[(order.indexOf(cur)+1)%3]); });
@@ -2434,7 +2465,7 @@ const sticky=box(.07,.07,.004,std({color:0xffe25a,roughness:.9}),.16,.37,.215,{p
 addIA('sticky',sticky,'Read the sticky note',()=>inner('In Ray\'s handwriting: "BACK DOOR CODE 19 87 13." ...We don\'t have a code on the back door.'));
 const note9=box(.14,.004,.1,std({color:0xf1ead8,emissive:0x5a5038,emissiveIntensity:.6,roughness:.9}),-6.0,.016,-7.45,{uv:0}); note9.visible=false;
 addIA('note9',note9,'Pick up a folded note',()=>{ note9.visible=false; try{ localStorage.setItem('kc-note9','1'); }catch(_){} sfx.page(); $('#evTitle').textContent="Carla's ninth note"; $('#evSub').textContent="Folded small, under the desk. It isn't in the ledger."; $('#evBody').textContent="There's a door in the office that isn't on Ray's floor plan.\nSometimes I hear someone in there, humming. It sounds happy.\nNothing in this place sounds happy.\nThe keypad wants six numbers. Ray's sticky note is wrong."; $('#evid').hidden=false; noteOpen=true; },()=>note9.visible&&state==='play'&&!busy);
-function devGuy(c){ c.items=[{K:ITEM_KINDS[0],bi:0,label:ITEM_KINDS[0].label(0),price:ITEM_KINDS[0].price,scanned:false,mesh:null}]; c.reqs=[]; c.pay='exact'; c.line="Just the Big Buck. ...Nice place. I built it, you know. Don't tell Ray."; }
+function devGuy(c){ c.items=[{K:ITEM_KINDS[0],bi:0,label:ITEM_KINDS[0].label(0),price:ITEM_KINDS[0].price,scanned:false,mesh:null}]; c.reqs=[]; c.pay='exact'; c.line="Just the Big Buck. ...Nice place, huh? I'm Jake. I built it. Don't tell Ray."; }
 
 // ---- keypad ----
 let kpCode='', kpOpen=false; const kpEl=$('#keypad'), kpScr=$('#kpScr');
@@ -2444,7 +2475,7 @@ function openKeypad(){ if(!devDoor.locked) return; kpOpen=true; uiOpen=true; kpC
 function closeKeypad(){ if(!kpOpen) return; kpOpen=false; kpEl.hidden=true; uiOpen=false; if(!dragLook&&state==='play') lock(); }
 function kpPress(k){ if(k==='C'){ kpCode=''; kpRender(); sfx.click(); return; } if(k==='OK') return kpTry(); if(kpCode.length<6){ kpCode+=k; tone(1100+Number(k)*80,.08,{type:'square',gain:.04}); kpRender(); if(kpCode.length===6) setTimeout(kpTry,200); } }
 function kpTry(){ if(kpCode.length<6) return; const code=kpCode; kpCode='';
-  if(cyrb53('kc-door:'+code)===DOOR_HASH){ tone(880,.12,{type:'square',gain:.05}); tone(1320,.25,{type:'square',gain:.05,when:.12}); devDoor.locked=false; closeKeypad(); setTimeout(()=>{ devDoor.target=devDoor.openAngle; sfx.bolt(); sfx.creak(); },250); toast('Click. The door unlocks.',2.5); }
+  if(cyrb53('kc-door:'+code)===DOOR_HASH){ tone(880,.12,{type:'square',gain:.05}); tone(1320,.25,{type:'square',gain:.05,when:.12}); devDoor.locked=false; devDoor.target=devDoor.openAngle; closeKeypad(); setTimeout(()=>{ sfx.bolt(); sfx.creak(); },250); toast('Click. The door unlocks.',2.5); }
   else { tone(150,.35,{type:'square',gain:.07}); cap('*BZZZT*'); kpRender(true); setTimeout(()=>{ if(kpOpen) kpRender(); },700); } }
 
 // ---- toggles ----
@@ -2511,7 +2542,7 @@ function updateClerk(dt){ const c=clerk, g=c.g, p=g.position, pp=player.pos; con
   if(d>.05){ const st=Math.min(d,(c.panic>0?3.3:1.2)*dt), bx=p.x, bz=p.z; p.x+=dx/d*st; p.z+=dz/d*st; resolve(p,.28); moved=Math.hypot(p.x-bx,p.z-bz); g.rotation.y=lerpAngle(g.rotation.y,Math.atan2(dx,dz),dt*8); if(moved<st*.2) c.goal=null; }
   c.phase+=moved*4; if(!DEV.party) animMan(g,c.phase,moved>.0005);
   if(c.panic>0&&Math.random()<dt*.5) cap('*panicked breathing*',{key:'clerk',at:[p.x,p.z],every:3500});
-  if(dist<.9){ c.caught++; sfx.scream(1); player.shake=.6; toast(`Got him. (${c.caught})`,2); const far=Object.values(NODES).sort((a,b)=>Math.hypot(b[0]-pp.x,b[1]-pp.z)-Math.hypot(a[0]-pp.x,a[1]-pp.z))[0]; p.set(far[0],0,far[1]); c.goal=null; c.panic=0; } }
+  if(dist<.9){ c.caught++; sfx.thud(1); player.shake=.6; toast(`Got him. (${c.caught})`,2); const far=Object.values(NODES).sort((a,b)=>Math.hypot(b[0]-pp.x,b[1]-pp.z)-Math.hypot(a[0]-pp.x,a[1]-pp.z))[0]; p.set(far[0],0,far[1]); c.goal=null; c.panic=0; } }
 
 // ---- fly / noclip ----
 function devFly(dt){ dt=dt/Math.max(.05,TSCALE);
@@ -2525,7 +2556,8 @@ function devFly(dt){ dt=dt/Math.max(.05,TSCALE);
 function devUpdate(dt){
   discoBall.rotation.y+=dt*1.2; if(state!=='play') return;
   const inRoom=inDevRoom();
-  if(inRoom&&!devUnlocked){ devUnlocked=true; try{ localStorage.setItem('kc-dev',ROOM_TOKEN); }catch(_){} [523,659,784,1046].forEach((f,i)=>tone(f,.5,{gain:.07,when:i*.12})); toast('DEVELOPER ACCESS GRANTED · type "developer" anywhere to open the cheat panel',7); setTimeout(devShout,2500); }
+  if(!devDoor.locked){ if(devDoor.target>.1&&Math.hypot(player.pos.x+7.7,player.pos.z+8)>2.6){ devDoor.target=0; sfx.thud(.4); } if(devDoor.target<.1&&devDoor.angle<.1){ devDoor.locked=true; sfx.bolt(); } } /* the door locks every time it shuts, from either side */
+  if(inRoom&&!devUnlocked){ devUnlocked=true; [523,659,784,1046].forEach((f,i)=>tone(f,.5,{gain:.07,when:i*.12})); toast('DEVELOPER ACCESS GRANTED · type "developer" anywhere to open the cheat panel',7); setTimeout(devShout,2500); }
   if(inRoom&&!DEV.wasIn) updateTrophies(); DEV.wasIn=inRoom;
   if(DEV.n9!==night){ DEV.n9=night; let got=false; try{ got=localStorage.getItem('kc-note9')==='1'; }catch(_){} note9.visible=night>=3&&!got; }
   if(DEV.god){ power=100; powerOut=false; battery=100; fear=0; }
@@ -2556,7 +2588,7 @@ function renderDevPanel(){ if(!devOpen) return; devEl.innerHTML='';
   let g=sec('Anomalies'); const sel=h('select'); A.forEach(a=>{ const o=h('option','',`${a.id} · ${a.desc}`); o.value=a.id; sel.append(o); }); if(current) sel.value=current.id; g.append(sel);
   btn(g,'Spawn it',()=>devSpawn(sel.value)); btn(g,'Clear',()=>{ resetWorld(); current=null; current2=null; toast('Store reset to normal.',2); }); btn(g,'Blackout event',()=>devEvent('blackout')); btn(g,'Silence event',()=>devEvent('still'));
   g=sec('Time'); btn(g,'Skip to next hour',()=>{ if(phase==='shift'&&!busy){ closeDevPanel(); endHour('correct'); } else toast('Only during the shift.',2); });
-  if(phase==='chores') btn(g,'Skip chores · clock in',()=>clockIn());
+  if(phase==='chores') btn(g,'Skip chores · clock in',()=>clockIn()); else if(phase==='break') btn(g,'Skip chores · start the hour',()=>{ CH.done=new Set(CH.list); resumeHour(); });
   tog(g,'Freeze clock','freeze'); btn(g,(DEV.clockMul>1?'■ ':'□ ')+'Clock ×4',()=>{ DEV.clockMul=DEV.clockMul>1?1:4; },DEV.clockMul>1); tog(g,'Slow motion','slow');
   const ns=h('select'); for(let n=1;n<=10;n++){ const o=h('option','','Night '+n); o.value=n; ns.append(o); } ns.value=String(Math.min(10,night)); g.append(ns); btn(g,'Go to that night',()=>devNight(+ns.value));
   g=sec('Monster'); btn(g,'Start a hunt',()=>{ if(phase!=='shift'){ toast('Only during the shift.',2); return; } if(DEV.pet) devSet('pet',false); closeDevPanel(); startHunt(null); });
@@ -2564,8 +2596,14 @@ function renderDevPanel(){ if(!devOpen) return; devEl.innerHTML='';
   g=sec('You'); tog(g,'God mode','god'); tog(g,'Fly / noclip','fly'); tog(g,'Tiny mode','tiny'); tog(g,'Photo mode','photo');
   btn(g,'+$100',()=>{ money+=100; updatePay(); }); btn(g,'Buy every upgrade',()=>{ for(const k in UP) UP[k]=true; applyUpgrades(); toast('Every upgrade unlocked.',2); });
   g=sec('Fun'); tog(g,'Party mode','party'); tog(g,'Soda rain','soda'); tog(g,'Big heads','bigHead'); tog(g,'Throw stuff (E on a product)','throw'); tog(g,'Reverse night','reverse'); btn(g,'DJ shoutout',()=>{ closeDevPanel(); devShout(); });
+  const tog2=(g,label,k)=>btn(g,(DEV[k]?'■ ':'□ ')+label,()=>devSet2(k,!DEV[k]),DEV[k]);
+  g=sec('Weapons'); tog2(g,'Gun · click to shoot','gun'); tog2(g,'Explosive rounds','boom');
+  g=sec('More powers'); tog2(g,'Super speed','speed'); tog2(g,'Moon jump · Space','moon'); tog2(g,'Night vision','nv'); tog2(g,'Giant monster','giant');
+  btn(g,'Lights off',()=>{ grid.on=false; }); btn(g,'Lights on',()=>{ grid.on=true; }); btn(g,'Spawn a real customer',()=>devCust(false)); btn(g,'Spawn a fake customer',()=>devCust(true)); btn(g,'Ring the phone',()=>devRing());
+  g=sec('Scares · try them'); btn(g,'In your face',()=>{ closeDevPanel(); setTimeout(()=>miniScare(1.15,{dark:true}),500); }); btn(g,'Aisle runner',()=>{ closeDevPanel(); aisleRun(); }); btn(g,'Cooler slam',()=>{ closeDevPanel(); coolerSlam(); }); btn(g,'Lights chase',()=>{ closeDevPanel(); lightsChase(); }); btn(g,'Behind you',()=>{ closeDevPanel(); behindYou(); }); btn(g,'Window slam',()=>{ closeDevPanel(); windowSlam(); });
+  g=sec('Teleport'); Object.keys(TELE).forEach(k=>btn(g,k,()=>devTeleport(k)));
   g=sec('Jukebox · store radio'); btn(g,'Your song · radio',()=>devTrack('radio'),DEV.track!=='oldies'&&!headphones); btn(g,'Your song · clean',()=>devTrack('clean'),DEV.track!=='oldies'&&headphones); btn(g,'Oldies',()=>devTrack('oldies'),DEV.track==='oldies');
-  g=sec('Admin'); btn(g,'Lock the secret room again',()=>{ try{ localStorage.removeItem('kc-dev'); }catch(_){} devUnlocked=false; devDoor.locked=true; devDoor.target=0; closeDevPanel(); toast('Locked. You will need the code again.',3); });
+  g=sec('Admin'); btn(g,'Lock the cheats again',()=>{ devUnlocked=false; devDoor.locked=true; devDoor.target=0; closeDevPanel(); toast('Locked. You will need the code again.',3); });
   devEl.append(h('p','hint','Fly: WASD, Space up, Z down, Shift fast. Throw: look at anything on a shelf and press E. Reverse night: F roars.')); }
 
 // keypad keys, Esc, and the typed phrase (capture phase, ahead of the game's own key handling)
@@ -2574,6 +2612,106 @@ addEventListener('keydown',e=>{
   if(devOpen&&e.code==='Escape'){ closeDevPanel(); e.stopImmediatePropagation(); return; }
   if(e.key&&e.key.length===1&&/[a-z]/i.test(e.key)){ devBuf=(devBuf+e.key.toLowerCase()).slice(-9); if(devBuf==='developer'&&devUnlocked&&state==='play'){ devBuf=''; e.stopImmediatePropagation(); if(DEV.photo){ devSet('photo',false); } closeNote(); devOpen?closeDevPanel():openDevPanel(); } }
 },true);
+
+/* ============================== SCARES: jumpscares that cost no strike ============================== */
+// Quick scares for regular play. They spike fear but never cost a strike. Settings → Audio → Extra jumpscares turns them off.
+const SC={cool:45,camT:0,camArmed:false,lastBackTry:0,busy:false};
+const scareFree=()=>S.scares&&state==='play'&&!busy&&!uiOpen&&!LD.on&&ST.mode==='off'&&!monster.visible&&!DEV.pet&&!DEV.reverse&&!SC.busy&&!(hourEvent&&hourEvent.started&&hourEvent.phase!=='done');
+// the monster appears right in your face for a split second
+async function miniScare(dist=1.15,o={}){
+  if(SC.busy) return; SC.busy=true; const fw=new V3(); camera.getWorldDirection(fw); fw.y=0; fw.normalize();
+  const x=player.pos.x+fw.x*dist, z=player.pos.z+fw.z*dist;
+  if(o.dark){ grid.flick=1; await wait(.22); }
+  monster.position.set(x,0,z); monster.rotation.y=Math.atan2(player.pos.x-x,player.pos.z-z); animMan(monster,0,false); monster.visible=true;
+  scareLight.position.set(camera.position.x+fw.x*.4,camera.position.y,camera.position.z+fw.z*.4); scareLight.intensity=o.dim?3:7; grid.flick=0;
+  sfx.scare(); player.shake=1.4; grade.uniforms.uRed.value=.45; fear=Math.min(100,fear+22);
+  await wait(o.hold||.42); monster.visible=false; scareLight.intensity=0; grade.uniforms.uRed.value=0;
+  if(o.dark){ grid.flick=1; await wait(.18); grid.flick=0; }
+  SC.busy=false; SC.cool=Math.max(40,95-night*8)+Math.random()*40; }
+// a figure sprints across the far end of the aisles
+async function aisleRun(){ if(SC.busy) return; SC.busy=true; const dir=Math.random()<.5?1:-1, z=player.pos.z>1.5?-1.6:5.6; let x=dir>0?-5:7.4;
+  monster.visible=true; monster.rotation.y=dir>0?Math.PI/2:-Math.PI/2; let ph=0; const t0=gt;
+  while(gt-t0<1.6&&(dir>0?x<7.4:x>-5)){ x+=dir*9*lastDt; ph+=lastDt*18; monster.position.set(x,0,z); animMan(monster,ph,true); if(Math.floor(ph/3)!==Math.floor((ph-lastDt*18)/3)){ const p=panAt(x,z); tone(70,.2,{gain:.35,slide:40,pan:p}); } await wait(0); }
+  cap('*something runs past the end of the aisle*',{at:[x,z]}); monster.visible=false; fear=Math.min(100,fear+10); SC.busy=false; }
+// every cooler door swings open at once, then slams
+async function coolerSlam(){ if(SC.busy) return; SC.busy=true; const keep=current&&current.id==='cooler';
+  for(let i=0;i<coolerDoors.length;i++){ coolerDoors[i].rotation.y=1.0+Math.random()*.3; await wait(.06); } sfx.creak(); await wait(.9);
+  coolerDoors.forEach((d,i)=>{ if(!(keep&&i===4)) d.rotation.y=0; }); sfx.slam(); sfx.glass(); cap('*every cooler door slams at once*',{at:[-1,-2.4]}); player.shake=Math.max(player.shake,.6); fear=Math.min(100,fear+12); SC.busy=false; }
+// the ceiling lights die one by one, toward you
+async function lightsChase(){ if(SC.busy) return; SC.busy=true; const items=grid.items.filter(i=>trofMats.includes(i.m)); const saved=items.map(i=>i.base);
+  const order=items.map((it,k)=>({it,k,d:troffers.find(t=>t.material===it.m)})).filter(o=>o.d).sort((a,b)=>b.d.position.distanceTo(player.pos)-a.d.position.distanceTo(player.pos));
+  for(const o of order){ o.it.base=.03; sfx.click(); await wait(.28); } LmainItem.base=4; await wait(.6);
+  SC.busy=false; if(scareFree()&&Math.random()<.5){ await miniScare(1.3,{dim:true}); } items.forEach((it,k)=>it.base=saved[k]); LmainItem.base=31; sfx.breaker(); }
+// the radio says your name, then something is behind you
+async function behindYou(){ if(SC.busy) return; SC.busy=true; radioLine='Sam. Turn around.'; radioSpeak=3; radioT=10; cap('*the radio crackles: "Sam. Turn around."*',{hold:3000});
+  const fw=new V3(-Math.sin(player.yaw),0,-Math.cos(player.yaw)); const x=player.pos.x-fw.x*1.3, z=player.pos.z-fw.z*1.3; await wait(1.2);
+  monster.position.set(x,0,z); monster.rotation.y=Math.atan2(player.pos.x-x,player.pos.z-z); animMan(monster,0,false); monster.visible=true; sfx.breath(1.4);
+  const t0=gt; await until(()=>gt-t0>3||lookingAt(x,1.9,z,.8)); const seen=lookingAt(x,1.9,z,.8);
+  if(seen){ scareLight.position.set(x,1.8,z); scareLight.intensity=6; sfx.scare(); player.shake=1.4; grade.uniforms.uRed.value=.45; fear=Math.min(100,fear+22); await wait(.4); scareLight.intensity=0; grade.uniforms.uRed.value=0; }
+  monster.visible=false; SC.busy=false; SC.cool=60+Math.random()*40; }
+// hands and a face slam against the front window
+async function windowSlam(){ if(SC.busy||faceMesh.visible) return; SC.busy=true; const x=clamp(player.pos.x+(Math.random()-.5)*3,-9,9.5); faceMesh.position.set(x,1.55,8.08); faceMesh.visible=true;
+  sfx.bang(); sfx.glass(); cap('*SLAM* · something hit the window',{at:[x,8],loud:true}); player.shake=1; fear=Math.min(100,fear+16); await wait(1.3); faceMesh.visible=false; SC.busy=false; SC.cool=50+Math.random()*40; }
+function updateScares(dt){
+  SC.cool-=dt; if(!scareFree()) { SC.camT=0; return; }
+  const inBack=player.pos.x>3&&player.pos.z<-3.1&&player.pos.z>-8;
+  // watching the cameras: a face fills the screen
+  if(camMode>=0&&night>=2){ SC.camT+=dt; if(SC.cool<=0&&SC.camT>4&&Math.random()<dt*.12){ const c=camList()[camMode]; const fw=new V3(); c.k.getWorldDirection(fw); const x=c.k.position.x+fw.x*1.1, z=c.k.position.z+fw.z*1.1; monster.position.set(x,Math.max(0,c.k.position.y-2.4),z); monster.rotation.y=Math.atan2(c.k.position.x-x,c.k.position.z-z); animMan(monster,0,false); monster.visible=true; sfx.scare(); fear=Math.min(100,fear+20); SC.busy=true; setTimeout(()=>{ monster.visible=false; camExit(); SC.busy=false; },450); SC.cool=70+Math.random()*40; } return; } else SC.camT=0;
+  if(SC.cool>0) return;
+  // dark back room with the flashlight on: it's standing in the beam
+  if(inBack&&backDark&&player.flash&&Math.random()<dt*.08){ miniScare(2.2,{dark:true,hold:.35}); return; }
+  // front windows
+  if(player.inside&&player.pos.z>4&&-Math.cos(player.yaw)>.6&&night>=2&&Math.random()<dt*.012){ windowSlam(); return; }
+}
+
+/* ============================== DEV: gun, teleports and more ============================== */
+const gun=new THREE.Group(); camera.add(gun); gun.position.set(.2,-.2,-.42); gun.visible=false;
+{ const gm=std({color:0x1a1b1d,metalness:.7,roughness:.35,envMap:envTex,envMapIntensity:.6}); box(.04,.06,.2,gm,0,0,0,{parent:gun,uv:0}); mesh(new THREE.CylinderGeometry(.011,.011,.08,10),gm,0,.012,-.13,{parent:gun,rx:Math.PI/2}); box(.034,.1,.05,std({color:0x3a2416,roughness:.8}),0,-.065,.06,{parent:gun,uv:0,rx:-.25}); }
+const muzzle=new THREE.PointLight(0xffc070,0,6,2); muzzle.position.set(.2,-.18,-.65); camera.add(muzzle);
+const flashMesh=mesh(new THREE.SphereGeometry(.035,8,6),glow(null,0xffd090,6),0,.012,-.19,{parent:gun}); flashMesh.visible=false;
+sfx.gun=()=>{ burst2(.25,{type:'highpass',f:900,gain:1.1,a:.001}); tone(110,.3,{gain:.7,slide:40}); burst2(.5,{type:'lowpass',f:500,gain:.5,src:'brown'}); };
+const gunRay=new THREE.Raycaster(); gunRay.far=60; let gunCD=0; const holes=[];
+const holeMat=std({color:0x050505,roughness:1,transparent:true,opacity:.85,polygonOffset:true,polygonOffsetFactor:-3,depthWrite:false});
+const visibleUp=o=>{ for(let x=o;x;x=x.parent) if(!x.visible) return false; return true; };
+const isUnder=(o,root)=>{ for(let x=o;x;x=x.parent) if(x===root) return true; return false; };
+function shootProduct(h,dir,force){ const rec=PRODUCTS.find(r=>r.parts.some(p=>p.e.mesh===h.object&&p.i===h.instanceId)); if(!rec) return false;
+  const g=new THREE.Group(); for(const p of rec.parts){ const m=new THREE.Mesh(p.e.geo,p.e.mat); m.castShadow=true; g.add(m); } rec.base.decompose(g.position,g.quaternion,g.scale); scene.add(g); _m.makeScale(.0001,.0001,.0001); setRec(rec,_m); rec.dirty=true;
+  DEV.thrown.push({g,v:dir.clone().multiplyScalar(force).add(new V3(0,2,0)),w:new V3((Math.random()-.5)*20,(Math.random()-.5)*20,(Math.random()-.5)*20)}); if(DEV.thrown.length>120){ const o=DEV.thrown.shift(); scene.remove(o.g); } return true; }
+function hitMonster(){ sfx.growl(1.2,1.2); cap('*it shrieks and staggers back*',{loud:true}); if(DEV.pet){ toast('Hey! It was being good.',2); return; } if(ST.mode==='hunt') endHunt(); else if(ST.mode==='peek'||ST.mode==='creep') vanishStalker(false); if(LD.on){ LD.stun=5; toast('It\'s stunned for a few seconds. Run.',2.5); } }
+function shootCustomer(c){ c.state='shot'; removeCounterItems(c); const g=c.g; const t0=gt; const fall=()=>{ const k=Math.min(1,(gt-t0)/.4); g.rotation.x=-k*Math.PI/2; g.position.y=k*.12; if(k<1) requestAnimationFrame(fall); else setTimeout(()=>{ if(c.state==='shot') disposeCustomer(c); },2500); }; fall(); }
+function explode(p){ const L=new THREE.PointLight(0xffa040,30,12,2); L.position.copy(p).add(new V3(0,.4,0)); scene.add(L); setTimeout(()=>scene.remove(L),160);
+  sfx.bang(); sfx.thunder(0); cap('*BOOM*',{loud:true}); player.shake=Math.max(player.shake,1.6); lightning=Math.max(lightning,.4);
+  let n=0; for(const rec of PRODUCTS){ if(rec.dirty) continue; const e=rec.base.elements; const d=Math.hypot(e[12]-p.x,e[13]-p.y,e[14]-p.z); if(d<2.6&&n<45){ const part=rec.parts[0]; const dir=new V3(e[12]-p.x,e[13]-p.y+.3,e[14]-p.z).normalize(); shootProduct({object:part.e.mesh,instanceId:part.i},dir,9*(1-d/2.6)+3); n++; } }
+  if(monster.visible&&monster.position.distanceTo(new V3(p.x,0,p.z))<3.5) hitMonster();
+  for(const c of customers) if(c.state!=='shot'&&c.g.position.distanceTo(new V3(p.x,0,p.z))<3) shootCustomer(c); }
+function fireGun(){ if(gunCD>0) return; gunCD=.2; sfx.gun(); cap('*BANG*',{loud:true,every:500,key:'gun'}); muzzle.intensity=10; flashMesh.visible=true; setTimeout(()=>{ muzzle.intensity=0; flashMesh.visible=false; },60);
+  player.pitch=Math.min(1.45,player.pitch+.035); gun.position.z=-.36; setTimeout(()=>gun.position.z=-.42,90);
+  gunRay.setFromCamera(center,camera); const dir=gunRay.ray.direction.clone();
+  const targets=[monster,man.g,...customers.map(c=>c.g),...(clerk?[clerk.g]:[]),...[...INST.values()].map(e=>e.mesh),...troffers,...rayTargets];
+  const h=gunRay.intersectObjects(targets,true).find(x=>x.object.material!==ghostMat&&visibleUp(x.object)); if(!h) return;
+  if(DEV.boom){ explode(h.point); return; }
+  if(isUnder(h.object,monster)) return hitMonster();
+  if(isUnder(h.object,man.g)){ man.g.visible=false; man.mode='hidden'; W.angel=false; sfx.growl(.8,1); return; }
+  if(clerk&&isUnder(h.object,clerk.g)){ clerk.caught++; toast(`Got him. (${clerk.caught})`,2); clerk.g.position.set(NODES.bb[0],0,NODES.bb[1]); clerk.goal=null; return; }
+  const c=customers.find(c=>isUnder(h.object,c.g)); if(c){ if(c.state!=='shot') shootCustomer(c); return; }
+  if(h.object.isInstancedMesh&&h.instanceId!==undefined){ shootProduct(h,dir,12); sfx.place(); return; }
+  if(troffers.includes(h.object)){ const it=grid.items.find(i=>i.m===h.object.material); if(it&&it.base>.1){ it.base=.03; sfx.glass(); cap('*the light bursts*'); } return; }
+  const mat=h.object.material; if(mat===M.glass||mat===M.coolerGlass){ sfx.glass(); }
+  if(h.face){ const n=h.face.normal.clone().transformDirection(h.object.matrixWorld); const d=mesh(new THREE.CircleGeometry(.025,8),holeMat,0,0,0,{}); d.position.copy(h.point).addScaledVector(n,.004); d.lookAt(h.point.clone().add(n)); holes.push(d); if(holes.length>80) scene.remove(holes.shift()); } }
+const TELE={'Register':[-8.4,4.4,-Math.PI/2],'Aisles':[2.3,2.2,0],'Coolers':[-1,-.6,0],'Back room':[6.5,-5.5,Math.PI],'Office':[-7.5,-5.5,0],'Lot':[2.8,13,0],'Behind the store':[5.5,-10,0],'Dev room':[-7.5,-10,0]};
+function devTeleport(k){ const t=TELE[k]; player.pos.set(t[0],DEV.fly?player.pos.y:0,t[1]); player.yaw=t[2]; prevP.copy(player.pos); closeDevPanel(); }
+let nvPrev=null;
+function devSet2(k,v){ DEV[k]=v;
+  if(k==='gun'){ gun.visible=v; if(v){ toast('Click to shoot. E still interacts.',3); } }
+  if(k==='nv'){ if(v){ nvPrev={i:hemi.intensity,c:hemi.color.getHex()}; hemi.intensity=3.2; hemi.color.setHex(0x66ff88); } else if(nvPrev){ hemi.intensity=nvPrev.i; hemi.color.setHex(nvPrev.c); } }
+  if(k==='giant') monster.scale.set(v?2.1:1.05,v?2.5:1.25,v?2.1:1.05);
+  if(k==='moon'&&!v){ player.pos.y=0; player.vy=0; }
+  renderDevPanel(); }
+function devUpdate2(dt){ gunCD=Math.max(0,gunCD-dt);
+  if(DEV.moon&&!DEV.fly){ player.vy=(player.vy||0); if(keys.Space&&player.pos.y<=0.001&&!uiOpen) player.vy=6.5; player.vy-=9.8*.28*dt; player.pos.y=Math.max(0,player.pos.y+player.vy*dt); if(player.pos.y<=0) player.vy=0; }
+  updateScares(dt); }
+function devCust(f){ if(phase!=='shift'){ toast('Only during the shift.',2); return; } spawnCustomer(f); toast(f?'A fake is on its way in.':'A customer is on the way.',2); }
+function devRing(){ if(phase!=='shift'||PH.ringing||PH.inCall){ toast('Only during the shift, when the phone is free.',2); return; } PH.ringing=true; PH.rings=0; PH.ringT=0; PH.call=pickCall(); closeDevPanel(); }
 
 /* ============================== INPUT ============================== */
 addEventListener('keydown',e=>{
@@ -2594,7 +2732,7 @@ addEventListener('keyup',e=>{ keys[e.code]=false; });
 addEventListener('blur',()=>{ for(const k in keys) keys[k]=false; });
 function look(dx,dy){ if(noteOpen||uiOpen||camMode>=0) return; player.yaw-=dx*.0022*sens; player.pitch=clamp(player.pitch-(S.invertY?-dy:dy)*.0022*sens,-1.45,1.45); }
 document.addEventListener('mousemove',e=>{ if(state!=='play'||paused) return; if(document.pointerLockElement===canvas||(dragLook&&dragging)) look(e.movementX||0,e.movementY||0); });
-canvas.addEventListener('mousedown',()=>{ if(state!=='play'||uiOpen) return; if(document.pointerLockElement===canvas){ interact(); return; } if(dragLook){ dragging=true; return; } lock(); });
+canvas.addEventListener('mousedown',()=>{ if(state!=='play'||uiOpen) return; if(document.pointerLockElement===canvas){ if(DEV.gun&&camMode<0&&!noteOpen){ fireGun(); return; } interact(); return; } if(dragLook){ dragging=true; if(DEV.gun&&camMode<0&&!noteOpen) fireGun(); return; } lock(); });
 UI.note.addEventListener('click',closeNote);
 addEventListener('mouseup',()=>dragging=false);
 function lock(){ try{ const p=canvas.requestPointerLock(); if(p&&p.catch) p.catch(()=>{ dragLook=true; }); }catch(e){ dragLook=true; } }
@@ -2602,7 +2740,7 @@ document.addEventListener('pointerlockerror',()=>{ dragLook=true; toast('Drag wi
 document.addEventListener('pointerlockchange',()=>{ if(document.pointerLockElement===canvas){ paused=false; $('#pause').hidden=true; $('#settings').hidden=true; } else if(state==='play'&&!dragLook&&!uiOpen){ paused=true; renderFound($('#foundList')); $('#pause').hidden=false; } });
 addEventListener('keydown',e=>{ if(e.code==='Escape'&&dragLook&&state==='play'&&!uiOpen){ paused=!paused; renderFound($('#foundList')); $('#pause').hidden=!paused; } });
 $('#resumeBtn').onclick=()=>{ paused=false; $('#pause').hidden=true; if(!dragLook) lock(); };
-const DEFAULTS={preset:'medium',res:.85,shadows:'low',aa:false,bloom:true,glow:.28,grain:true,lens:true,rain:1,fov:70,fps:false,vol:.9,music:.8,radio:.8,sens:1,invertY:false,bob:true,caps:true};
+const DEFAULTS={preset:'medium',res:.85,shadows:'low',aa:false,bloom:true,glow:.28,grain:true,lens:true,rain:1,fov:70,fps:false,vol:.9,music:.8,radio:.8,sens:1,invertY:false,bob:true,caps:true,scares:true};
 const PRESETS={low:{res:.6,shadows:'off',aa:false,bloom:false,rain:.5},medium:{res:.85,shadows:'low',aa:false,bloom:true,rain:1},high:{res:1,shadows:'high',aa:true,bloom:true,rain:1}};
 const S={...DEFAULTS}; try{ Object.assign(S,JSON.parse(localStorage.getItem('kc-settings')||'{}')); }catch(_){}
 const pct=v=>Math.round(v*100)+'%';
@@ -2623,7 +2761,8 @@ const SCHEMA={
     {k:'vol',label:'Master volume',type:'range',min:0,max:1,step:.05,fmt:pct},
     {k:'music',label:'Tension sounds',hint:'Drones and heartbeat during danger',type:'range',min:0,max:1,step:.05,fmt:pct},
     {k:'radio',label:'Radio',type:'range',min:0,max:1,step:.05,fmt:pct},
-    {k:'caps',label:'Sound captions',hint:'Show text like *brrrring* when something makes a sound',type:'toggle'}],
+    {k:'caps',label:'Sound captions',hint:'Show text like *brrrring* when something makes a sound',type:'toggle'},
+    {k:'scares',label:'Extra jumpscares',hint:'Sudden scares that never cost a strike',type:'toggle'}],
   Controls:[
     {k:'sens',label:'Mouse sensitivity',type:'range',min:.3,max:2.5,step:.1,fmt:v=>v.toFixed(1)+'×'},
     {k:'invertY',label:'Invert mouse Y',type:'toggle'},
@@ -2675,7 +2814,7 @@ function frame(){
   const rawDt=clk.getDelta(); const dt=Math.min(rawDt*TSCALE,DTMAX); frameN++;
   if(S.fps){ fpsN++; fpsT+=rawDt; if(fpsT>=.5){ $('#fpsBox').textContent=Math.round(fpsN/fpsT)+' FPS'; fpsN=0; fpsT=0; } }
   if(state==='title'){ titleT+=dt; gt+=dt; tickWaiters(); const a=titleT*.035; camera.position.set(-15+Math.sin(a)*3,2.1+Math.sin(a*.7)*.25,33-Math.cos(a)*2); camera.lookAt(1.5,2.2,10); if(Math.random()<.0025) strike(1); }
-  else if(!paused){ gt+=dt; tickWaiters(); updatePlayer(state==='play'||state==='end'?dt:0); if(state==='play') updateInteract(); updateDoors(dt); updateAnomalies(dt); updateCustomers(dt); updateHour(dt); updateEvent(dt); updateRadio(dt); updateCreep(dt); musicTick(); updateStalker(dt); updateRun(dt); devUpdate(dt);
+  else if(!paused){ gt+=dt; tickWaiters(); updatePlayer(state==='play'||state==='end'?dt:0); if(state==='play') updateInteract(); updateDoors(dt); updateAnomalies(dt); updateCustomers(dt); updateHour(dt); updateEvent(dt); updateRadio(dt); updateCreep(dt); musicTick(); updateStalker(dt); updateRun(dt); devUpdate(dt); devUpdate2(dt);
     if(toastT>0){ toastT-=dt; if(toastT<=0) UI.toast.classList.remove('on'); } }
   updateTruck(dt);
   tension=lerp(tension,Math.max(targetTension,fear/115),dt*.6); lastDt=dt;

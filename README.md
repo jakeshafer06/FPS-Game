@@ -13,6 +13,17 @@ An endless first-person night-shift horror game that runs in the browser. It's O
 - **Leave the anomalies alone:** touch something that's wrong too many times and it notices. You'll get a hunt, a hiding event, or a strike.
 - **Sound captions:** every important sound pops up as text, like *brrrring* for the phone, with an arrow showing which way it came from. Turn them off in Settings → Audio.
 
+## What's new in 4.5
+
+- Chores before every hour, not just before the shift. When an hour ends the clock stops, you do one or two chores, then clock back in at the register to start the next hour.
+
+## What's new in 4.4
+
+- More jumpscares: things in the aisles, the coolers, the lights, the windows, the cameras, and the phone. They spike your fear but never cost a strike. Turn them off in Settings → Audio → Extra jumpscares.
+- The hours get busier with scares near 5 AM.
+- New models for the drink crate and the bag of coffee.
+- Every anomaly is inside the store now, and captions never hint at one.
+
 ## What's new in 4.3
 
 - Put on headphones at the radio to hear the song clean, like background music. The rain gets quieter and more muffled while you wear them.
