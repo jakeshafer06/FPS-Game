@@ -46,10 +46,11 @@ The included `netlify.toml` tells Netlify there is no build step and to publish 
 | Mouse | Look |
 | E / click | Interact (register, logbook, doors, shelves) |
 | F | Phone flashlight |
+| Q | Drop what you are holding |
 | R | Read Ray's rules |
 | 1 to 7 | Choose an option |
 | Space | Skip a line |
-| Esc | Pause (mouse sensitivity, glow, and graphics settings) |
+| Esc | Pause (settings: graphics presets, audio, controls) |
 
 Needs a keyboard and mouse. Headphones recommended.
 
