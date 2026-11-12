@@ -1,10 +1,10 @@
 {
   "name": "kettle-creek",
-  "version": "4.0.0",
+  "version": "4.2.0",
   "description": "An endless first-person night-shift horror game that runs in the browser.",
   "private": true,
   "scripts": {
-    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});fs.copyFileSync('index.html','dist/index.html');console.log('Copied index.html to dist/')\"",
+    "build": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});for(const f of ['index.html','radio.mp3','rain.mp3']){fs.copyFileSync(f,'dist/'+f);console.log('Copied '+f+' to dist/')}\"",
     "start": "serve . -l 3000"
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-# Kettle Creek is a single HTML file. The build just copies it into dist/,
+# Kettle Creek is one HTML file plus two audio files. The build copies them into dist/,
 # which matches the dist folder this Netlify site was originally set up to publish.
 [build]
   command = "npm run build"
