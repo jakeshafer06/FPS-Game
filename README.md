@@ -13,6 +13,18 @@ An endless first-person night-shift horror game that runs in the browser. It's O
 - **Leave the anomalies alone:** touch something that's wrong too many times and it notices. You'll get a hunt, a hiding event, or a strike.
 - **Sound captions:** every important sound pops up as text, like *brrrring* for the phone, with an arrow showing which way it came from. Turn them off in Settings → Audio.
 
+## What's new in 6.0
+
+A visual overhaul.
+
+- **Reflections:** the wet parking lot and the waxed store floor mirror the lights around them, with rain ripples in the puddles.
+- **Light shafts:** visible beams under the canopy lights, the store's fluorescents and your flashlight, with dust drifting in the air.
+- **A new sky:** storm clouds drift overhead, lit from behind by the moon and from inside by lightning.
+- **Rain on the windows:** drops run down the outside of the front glass.
+- **New color grade:** the flat green tint is gone. Shadows lean teal, highlights lean warm, and signs and products keep their real colors.
+- **A redesigned title screen** that fits any window size.
+- Two new graphics settings, **Reflections** and **Light shafts and dust**. Both are off on the Low preset.
+
 ## What's new in 5.2
 
 - **The logbook is in the office now.** When you log the hour, the office door slams shut and the lights cut out. Whatever changed, you find out when you open the door.
@@ -120,7 +132,7 @@ Needs a keyboard and mouse. Headphones recommended.
 
 The game is one file, `index.html`, plus two audio files:
 
-- **Three.js 0.160** (ES modules via an import map) for rendering, with bloom and a custom film-grain, vignette, and chromatic-aberration pass.
+- **Three.js 0.160** (ES modules via an import map) for rendering, with bloom, planar reflections, additive light shafts, and a custom color-grade pass with film grain, vignette, and chromatic aberration.
 - All textures and product packaging (every brand is invented) are drawn at runtime with the Canvas API, with normal maps generated from height maps. All models are built in code, so there are no image or model files.
 - The radio song (`radio.mp3`) and the rain (`rain.mp3`) are recordings that loop. The rain plays through a filter that muffles it indoors, and the radio plays through a filter that makes it sound like a cheap speaker. If either file is missing, the game falls back to synthesized versions.
 - Every other sound (fluorescent hum, phone, thunder, stingers, the monster) is synthesized with the Web Audio API.
